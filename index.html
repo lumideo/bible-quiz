@@ -22,8 +22,6 @@
     .choices button:hover{background:#f1f5f9}
     .hint{margin-top:10px;color:#1d4ed8;font-size:14px;text-align:left}
     .note{margin-top:12px;font-size:12px;color:#9ca3af}
-    details.dev{margin-top:16px;text-align:left}
-    details.dev summary{cursor:pointer}
   </style>
 </head>
 <body>
@@ -40,8 +38,8 @@
     <p>
       <label style="display:block;margin:6px 0 8px;">레벨 선택</label>
       <select id="level" style="max-width:260px">
-        <option value="basic">말씀탐험 (연습문제)</option>
-        <option value="real">믿음도전 (실전문제)</option>
+        <option value="basic">말씀탐험 (연습)</option>
+        <option value="real">믿음도전 (실전)</option>
       </select>
     </p>
 
@@ -69,20 +67,20 @@
   <audio id="wrongSound"   preload="auto"><source src="./orrgoll_ding.mp3" type="audio/mpeg"></audio>
   <audio id="fanfareSound" preload="auto"><source src="./fanfare.mp3" type="audio/mpeg"></audio>
 
-  <!-- 샘플 3문항(자동 로드 실패 시만 사용되는 안전장치) -->
+  <!-- 자동 로드 실패 시 쓰는 샘플 3문항 (안전장치) -->
   <script id="questionsData" type="application/json">[
     { "q": "창세기 1장 1절: 태초에 하나님이 (      )와 (      )을 창조하시니라 / 하늘, 땅 (공백 무시)", "type": "fill", "answer": ["하늘과땅","하늘과 땅","하늘 땅"] },
     { "q": "예수님의 제자는 몇 명이었나요?", "type": "mc", "choices": ["10명","12명","70명","3명"], "answer": 1 },
     { "q": "다윗이 물리친 거인의 이름은?", "type": "mc", "choices": ["골리앗","바알","느부갓네살","사울"], "answer": 0 }
-  </script>
+  ]</script>
 
   <script>
-  // ---------- 유틸 ----------
+  /* ===== 유틸 ===== */
   const byId = (id)=>document.getElementById(id);
   const normalize = (s)=> String(s??'').toLowerCase().replace(/\s+/g,'').replace(/["'“”’]/g,'');
   const shuffle = (a)=>{const r=a.slice(); for(let i=r.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[r[i],r[j]]=[r[j],r[i]];} return r;};
 
-  // ---------- 판정 ----------
+  /* ===== 판정 ===== */
   const isCorrectMC = (q, idx)=>{
     if (typeof q.answer === 'number') return (q.answer === idx || q.answer === idx+1);
     if (typeof q.answer === 'string'){
@@ -98,7 +96,7 @@
     return normalize(ans) === v;
   };
 
-  // ---------- 전처리(힌트/타입 표준화) ----------
+  /* ===== 전처리(힌트/타입 표준화) ===== */
   function preprocess(list){
     if(!Array.isArray(list)) return [];
     return list.map((raw, i)=>{
@@ -118,14 +116,18 @@
     });
   }
 
-  // ---------- 데이터 로드(자동) ----------
+  /* ===== 데이터 로드(자동) ===== */
   let QUESTIONS = [];
-  const DEFAULT_URL = './questions_tuned_70.json'; // 같은 폴더의 70문항 JSON
+  // 현재 페이지 폴더 기준 절대 URL 생성 + 최신 강제
+  const DEFAULT_URL = new URL(
+    'questions_tuned_70.json',
+    location.origin + location.pathname.replace(/[^/]*$/, '')
+  ).toString();
 
   async function autoLoadQuestions(){
-    // 1) 동일 저장소의 JSON 자동 로드
+    // 1) 저장소의 70문항 JSON 자동 로드
     try{
-      const res = await fetch(DEFAULT_URL, {cache:'no-store'});
+      const res = await fetch(DEFAULT_URL, { cache: 'reload' });
       if(res.ok){
         const data = await res.json();
         if(Array.isArray(data) && data.length){
@@ -134,7 +136,7 @@
           return;
         }
       }
-    }catch(e){ console.warn('자동 로드 실패(무시):', e); }
+    }catch(e){ console.warn('자동 로드 실패:', e); }
 
     // 2) 실패 시 내장 샘플 사용
     try{
@@ -146,7 +148,7 @@
   }
   window.addEventListener('DOMContentLoaded', autoLoadQuestions);
 
-  // ---------- 사운드(파일 우선, WebAudio 폴백) ----------
+  /* ===== 사운드(파일 우선, WebAudio 폴백) ===== */
   let audioCtx=null;
   function ensureAudio(){ try{ if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)(); if(audioCtx.state==='suspended') audioCtx.resume(); }catch(e){} }
   window.addEventListener('pointerdown', ensureAudio, {once:true});
@@ -178,12 +180,22 @@
     }catch(e){ fb(); }
   }
 
-  // ---------- 게임 로직 ----------
+  /* ===== 게임 로직 ===== */
   let current=0, score=0, level='basic', playerName='';
   let wrongCount=0, hintShown=false;
 
-  function startGame(){
+  async function startGame(){
     ensureAudio();
+
+    // 70개 미만이면 한 번 더 로드 시도 + 시작 차단
+    if(!Array.isArray(QUESTIONS) || QUESTIONS.length < 50){
+      await autoLoadQuestions();
+    }
+    if(!Array.isArray(QUESTIONS) || QUESTIONS.length < 50){
+      alert('문제를 자동으로 불러오지 못했어요.\n잠시 후 새로고침(F5) 후 다시 시도해 주세요.');
+      return;
+    }
+
     playerName = byId('playerName').value || '미션키즈';
     level = byId('level').value;
     byId('quizPlayer').textContent = `♥ 이름 → ${playerName} ♥`;
@@ -253,17 +265,8 @@
   byId('startBtn')?.addEventListener('click', startGame);
   byId('retryBtn')?.addEventListener('click', restartGame);
   </script>
-
-  <!-- 필요하면 수동 불러오기 UI(개발자용) -->
-  <details class="dev">
-    <summary>⚙️ 개발자 옵션 (수동으로 JSON 불러오기)</summary>
-    <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:8px;">
-      <input id="qfile" type="file" accept="application/json" />
-      <input id="qurl" type="url" placeholder="https://.../questions_tuned_70.json" style="flex:1; min-width:240px;" />
-      <button id="qurlLoad" class="ghost" onclick="(async()=>{const url=(document.getElementById('qurl')?.value||'').trim(); if(!url) return alert('URL 입력'); try{const r=await fetch(url,{cache:'no-store'}); const d=await r.json(); QUESTIONS=preprocess(d); document.getElementById('qcount').textContent=String(QUESTIONS.length); alert('불러오기 완료');}catch(e){alert('가져오기 실패:'+e);} })()">불러오기</button>
-    </div>
-  </details>
 </main>
 </body>
 </html>
+
 
