@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>성경퀴즈게임</title>
+  <style>
+    :root { --maxw: 720px; --blue:#1e40af; --bg:#f8fafc; --muted:#6b7280; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif; background: #fff; color:#111; }
+    main { max-width: var(--maxw); margin: 0 auto; padding: 20px; text-align: center; }
+    h1 { margin: 8px 0 2px; font-size: clamp(28px, 6vw, 42px); }
+    .muted { color: var(--muted); margin: 0 0 16px; }
+    .hidden { display: none !important; }
+    .card { background:#fff; border:1px solid #e5e7eb; border-radius:16px; padding:20px; box-shadow:0 6px 30px rgba(0,0,0,.06); }
+    .row { margin: 12px 0; }
+    input[type="text"], input[type="url"], select {
+      width: 100%; max-width: 420px; padding: 12px 14px; border:2px solid #e5e7eb; border-radius:14px; font-size:16px;
+    }
+    button {
+      cursor:pointer; border:none; border-radius:14px; padding:12px 18px; font-weight:700; background:var(--blue); color:#fff;
+    }
+    button.secondary { background:#334155; }
+    button.ghost { background:#e5e7eb; color:#111; }
+    .question { margin: 16px 0; font-size: 18px; line-height: 1.55; text-align:left; }
+    .choices { display:grid; gap:10px; }
+    .choices button {
+      background:#fff; color:#111; border:2px solid #e5e7eb; text-align:left; padding:14px; border-radius:14px;
+    }
+    .choices button:hover { background:#f1f5f9; }
+    .hint { margin-top:10px; color:#1d4ed8; font-size:14px; text-align:left; }
+    .footer-note{ margin-top:12px; font-size:12px; color:#9ca3af; }
+    details.dev { text-align:left; margin-top:16px; }
+    details.dev summary { cursor:pointer; }
+  </style>
+</head>
+<body>
+<main>
+  <!-- START -->
+  <section id="startScreen" class="card">
+    <h1>성경퀴즈게임</h1>
+    <p class="muted">얘들아 성경퀴즈 풀어볼까?</p>
+
+    <div class="row">
+      미션키즈♥
+      <div style="margin-top:8px"><input id="playerName" type="text" maxlength="4" placeholder="이름 입력 (최대 4글자)" /></div>
+      ♥
+    </div>
+
+    <div class="row">
+      <label style="display:block; margin:6px 0 8px;">레벨 선택</label>
+      <select id="level" style="max-width:260px">
+        <option value="basic">말씀탐험 (연습)</option>
+        <option value="real">믿음도전 (실전)</option>
+      </select>
+    </div>
+
+    <div class="row" style="text-align:left; margin-inline:auto; max-width:520px;">
+      <strong>문제 불러오기 (파일)</strong><br/>
+      <input id="qfile" type="file" accept="application/json" />
+      <div class="muted" style="font-size:12px; margin-top:6px;">현재 내장 문제: <span id="qcount">3</span>문항</div>
+    </div>
+
+    <div class="row" style="text-align:left; margin-inline:auto; max-width:520px;">
+      <strong>문제 불러오기 (URL)</strong><br/>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+        <input id="qurl" type="url" placeholder="https://.../questions_tuned_70.json" />
+        <button id="qurlLoad" class="ghost">불러오기</button>
+      </div>
+      <div class="muted" style="font-size:12px; margin-top:6px;">* CORS 허용 서버 권장 (GitHub Pages / raw.githack / Dropbox?dl=1 / Google Drive uc?export=download&id=ID)</div>
+    </div>
+
+    <div class="row"><button id="startBtn">시작하기</button></div>
+  </section>
+
+  <!-- QUIZ -->
+  <section id="quizScreen" class="card hidden">
+    <h2 id="quizPlayer" class="muted" style="margin-top:0;"></h2>
+    <div id="questionContainer" class="question"></div>
+    <div id="choicesContainer" class="choices"></div>
+    <div id="hintContainer" class="hint hidden"></div>
+  </section>
+
+  <!-- END -->
+  <section id="endScreen" class="card hidden">
+    <h2 id="endMessage" style="margin-top:0;"></h2>
+    <div class="row">
+      <button id="retryBtn">다시 도전하기</button>
+    </div>
+    <div class="footer-note">소리가 작다면 휴대폰 무음 모드를 해제하고 볼륨을 올려주세요.</div>
+  </section>
+
+  <!-- 사운드 파일(선택). 없으면 WebAudio 폴백으로 자동 재생됩니다. -->
+  <audio id="correctSound" preload="auto"><source src="dingdongdang.mp3" type="audio/mpeg"></audio>
+  <audio id="wrongSound"   preload="auto"><source src="orrgoll_ding.mp3" type="audio/mpeg"></audio>
+  <audio id="fanfareSound" preload="auto"><source src="fanfare.mp3" type="audio/mpeg"></audio>
+
+  <!-- 샘플 내장 문제: 실행 확인용 (3문항). 70문항은 파일/URL로 불러오세요. -->
+  <script id="questionsData" type="application/json">[
+    { "q": "창세기 1장 1절: 태초에 하나님이 (      )와 (      )을 창조하시니라 / 하늘, 땅 (공백 무시)", "type": "fill", "answer": ["하늘과땅","하늘과 땅","하늘 땅"] },
+    { "q": "예수님의 제자는 몇 명이었나요?", "type": "mc", "choices": ["10명","12명","70명","3명"], "answer": 1 },
+    { "q": "다윗이 물리친 거인의 이름은?", "type": "mc", "choices": ["골리앗","바알","느부갓네살","사울"], "answer": 0 }
+  ]</script>
+
+  <script>
+  // ===== 유틸 =====
+  const $ = (s)=>document.querySelector(s);
+  const byId = (id)=>document.getElementById(id);
+  const normalize = (s)=> String(s ?? '').toLowerCase().replace(/\s+/g,'').replace(/["'“”’]/g,'');
+
+  function shuffleArray(a){
+    const arr = a.slice();
+    for(let i=arr.length-1; i>0; i--){
+      const j = Math.floor(Math.random()*(i+1));
+      [arr[i],arr[j]] = [arr[j],arr[i]];
+    }
+    return arr;
+  }
+
+  // ===== 정답 판정 =====
+  function isCorrectMC(q, idx){
+    if (typeof q.answer === 'number') return (q.answer === idx || q.answer === idx+1);
+    if (typeof q.answer === 'string'){
+      const opts = q.options || q.choices || [];
+      return normalize(opts[idx]) === normalize(q.answer);
+    }
+    return false;
+  }
+  function isCorrectFill(q, val){
+    const v = normalize(val);
+    const ans = q.answer;
+    if(Array.isArray(ans)) return ans.some(a=> normalize(a)===v);
+    return normalize(ans) === v;
+  }
+
+  // ===== 전처리 (힌트 추출, 타입 표준화) =====
+  function preprocessQuestions(list){
+    if(!Array.isArray(list)) return [];
+    return list.map((raw, i)=>{
+      const obj = {...raw};
+      const text = (obj.q || obj.question || '').toString();
+      let qText = text, hintFromSlash = '';
+      const p = text.indexOf('/');
+      if(p>-1){ qText = text.slice(0,p).trim(); hintFromSlash = text.slice(p+1).trim(); }
+
+      const rawType = (obj.type||'').toString().toLowerCase();
+      let type = 'mc';
+      if(['mc','mcq','multiple','choice','객관식'].includes(rawType)) type='mc';
+      else if(['fill','short','text','주관식'].includes(rawType)) type='fill';
+
+      const options = Array.isArray(obj.choices) ? obj.choices : (Array.isArray(obj.options)? obj.options : []);
+      let answer = obj.answer;
+      if(type==='mc' && typeof answer==='string' && /^\d+$/.test(answer)) answer = parseInt(answer,10);
+      if(type==='fill' && typeof answer==='string' && answer.includes(',')) answer = answer.split(',').map(s=>s.trim());
+      const hint = (obj.hint && String(obj.hint).trim()) || hintFromSlash;
+
+      return { id: obj.id || (i+1), type, question: qText, options, answer, hint };
+    });
+  }
+
+  // ===== 데이터 로드 =====
+  let QUESTIONS = [];
+  (function(){
+    try{
+      const raw = byId('questionsData')?.textContent || '[]';
+      const arr = JSON.parse(raw);
+      if(Array.isArray(arr) && arr.length) QUESTIONS = preprocessQuestions(arr);
+      byId('qcount').textContent = String(QUESTIONS.length||0);
+    }catch(e){ console.warn('inline JSON 파싱 실패', e); }
+  })();
+
+  byId('qfile')?.addEventListener('change', (ev)=>{
+    const f = ev.target.files?.[0]; if(!f) return;
+    const reader = new FileReader();
+    reader.onload = ()=>{
+      try{
+        const data = JSON.parse(String(reader.result||'[]'));
+        if(Array.isArray(data) && data.length){
+          QUESTIONS = preprocessQuestions(data);
+          byId('qcount').textContent = String(QUESTIONS.length);
+          alert(`문제 ${data.length}문항을 불러왔어요!`);
+        } else alert('유효한 문제 배열(JSON)이 아니에요.');
+      }catch(err){ alert('JSON 파싱 오류: '+err); }
+    };
+    reader.readAsText(f, 'utf-8');
+  });
+
+  byId('qurlLoad')?.addEventListener('click', async ()=>{
+    const url = (byId('qurl')?.value || '').trim();
+    if(!url) return alert('불러올 JSON URL을 입력해 주세요.');
+    try{
+      const res = await fetch(url, {cache:'no-store'});
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      const data = await res.json();
+      if(Array.isArray(data) && data.length){
+        QUESTIONS = preprocessQuestions(data);
+        byId('qcount').textContent = String(QUESTIONS.length);
+        alert(`문제 ${data.length}문항을 불러왔어요!`);
+      } else alert('유효한 문제 배열(JSON)이 아니에요.');
+    }catch(err){
+      alert('가져오기에 실패했어요. 원인: '+err+'\n(서버 CORS 설정을 확인해 주세요)');
+    }
+  });
+
+  // ===== 사운드 (파일 우선, WebAudio 폴백) =====
+  let audioCtx = null;
+  function ensureAudio(){
+    try{
+      if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+      if(audioCtx.state==='suspended') audioCtx.resume();
+    }catch(e){}
+  }
+  window.addEventListener('pointerdown', ensureAudio, {once:true});
+  window.addEventListener('touchstart', ensureAudio, {once:true});
+
+  function tone(freq, dur, type='sine', start=0, vol=0.22){
+    if(!audioCtx) return;
+    const t0 = audioCtx.currentTime + start;
+    const osc = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    osc.type = type; osc.frequency.setValueAtTime(freq, t0);
+    g.gain.setValueAtTime(0, t0);
+    g.gain.linearRampToValueAtTime(vol, t0+0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0+dur);
+    osc.connect(g); g.connect(audioCtx.destination);
+    osc.start(t0); osc.stop(t0+dur+0.05);
+  }
+  function synthChime(){ ensureAudio(); tone(523.25,0.5,'sine',0,0.24); tone(659.25,0.45,'sine',0.18,0.22); tone(783.99,0.4,'sine',0.36,0.20); }
+  function synthWrong(){ ensureAudio(); tone(880.00,0.45,'sine',0,0.22); tone(698.46,0.45,'sine',0.18,0.22); tone(523.25,0.45,'sine',0.36,0.22); }
+  function synthFanfare(){
+    ensureAudio();
+    [[523.25,659.25,783.99],[587.33,739.99,880.00],[659.25,783.99,987.77]].forEach((ch,i)=> ch.forEach((f,j)=> tone(f,0.35,'square',i*0.35,0.18 - j*0.03)));
+  }
+  function playSound(id){
+    const el = byId(id);
+    const fallback = ()=> (id==='correctSound'?synthChime(): id==='wrongSound'?synthWrong(): synthFanfare());
+    if(!el) return fallback();
+    try{
+      el.currentTime = 0;
+      const p = el.play();
+      if(p && typeof p.then==='function'){
+        p.then(()=>{}).catch(fallback);
+        setTimeout(()=>{ if(el.paused) fallback(); }, 300);
+      }else{
+        setTimeout(()=>{ if(el.paused) fallback(); }, 150);
+      }
+    }catch(e){ fallback(); }
+  }
+
+  // ===== 게임 상태 =====
+  let current = 0, score = 0, level = 'basic', playerName = '';
+  let wrongCountForThis = 0, hintShown = false;
+
+  function startGame(){
+    ensureAudio();
+    playerName = byId('playerName').value || '미션키즈';
+    level = byId('level').value;
+    byId('quizPlayer').textContent = `♥ 이름 → ${playerName} ♥`;
+
+    byId('startScreen').classList.add('hidden');
+    byId('endScreen').classList.add('hidden');
+    byId('quizScreen').classList.remove('hidden');
+
+    score = 0; current = 0; wrongCountForThis = 0; hintShown = false;
+    QUESTIONS = shuffleArray(QUESTIONS.slice());
+    renderQuestion();
+  }
+
+  function renderQuestion(){
+    if(current >= QUESTIONS.length) return endGame();
+    const q = QUESTIONS[current];
+    byId('questionContainer').textContent = `${current+1}. ${q.question}`;
+    const choices = byId('choicesContainer'); choices.innerHTML = '';
+    const hintBox = byId('hintContainer'); hintBox.classList.add('hidden'); hintBox.textContent = '';
+
+    if(q.type === 'mc'){
+      (q.options || []).forEach((c,i)=>{
+        const btn = document.createElement('button');
+        btn.textContent = `${i+1}) ${c}`;
+        btn.onclick = ()=> handleAnswer(isCorrectMC(q,i));
+        choices.appendChild(btn);
+      });
+    } else {
+      const input = document.createElement('input');
+      input.type = 'text'; input.autocomplete = 'off';
+      input.placeholder = q.hint ? `힌트: ${q.hint}` : '정답을 입력하세요';
+      const btn = document.createElement('button'); btn.className = 'secondary'; btn.textContent = '확인';
+      btn.onclick = ()=> handleAnswer(isCorrectFill(q, input.value));
+      input.addEventListener('keydown', e=>{ if(e.key==='Enter') btn.click(); });
+      choices.append(input, btn);
+
+      if(level==='basic' && q.hint && hintShown){
+        hintBox.textContent = `힌트: ${q.hint}`;
+        hintBox.classList.remove('hidden');
+      }
+      setTimeout(()=> input.focus(), 0);
+    }
+  }
+
+  function handleAnswer(correct){
+    if(level === 'basic'){
+      if(correct){
+        playSound('correctSound'); score++; current++; wrongCountForThis=0; hintShown=false; renderQuestion();
+      }else{
+        playSound('wrongSound'); wrongCountForThis++; if(!hintShown && wrongCountForThis>=1){ hintShown=true; renderQuestion(); }
+      }
+    }else{
+      if(correct){ playSound('correctSound'); score++; } else { playSound('wrongSound'); }
+      current++; wrongCountForThis=0; hintShown=false; renderQuestion();
+    }
+  }
+
+  function endGame(){
+    byId('quizScreen').classList.add('hidden');
+    byId('endScreen').classList.remove('hidden');
+    const total = Math.max(1, QUESTIONS.length);
+    byId('endMessage').textContent = `축하합니다! ${Math.round(score/total*100)}점입니다.`;
+    playSound('fanfareSound');
+  }
+
+  function restartGame(){
+    byId('endScreen').classList.add('hidden');
+    byId('startScreen').classList.remove('hidden');
+  }
+
+  // 버튼 바인딩
+  byId('startBtn')?.addEventListener('click', startGame);
+  byId('retryBtn')?.addEventListener('click', restartGame);
+
+  // (선택) 개발자 자가테스트
+  window.addEventListener('DOMContentLoaded', ()=>{
+    const ok = (c,n)=>console.log((c?'PASS':'FAIL'), '-', n);
+    ok(typeof startGame==='function','startGame 정의됨');
+    ok(typeof renderQuestion==='function','renderQuestion 정의됨');
+    ok(Array.isArray(QUESTIONS)&&QUESTIONS.length>0,'문제 로드됨');
+  });
+  </script>
+
+  <details class="dev">
+    <summary>⚙️ 개발자 테스트</summary>
+    <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;">
+      <button class="ghost" onclick="playSound('correctSound')">정답 사운드</button>
+      <button class="ghost" onclick="playSound('wrongSound')">오답 사운드</button>
+      <button class="ghost" onclick="playSound('fanfareSound')">팡파르</button>
+    </div>
+  </details>
+</main>
+</body>
+</html>
