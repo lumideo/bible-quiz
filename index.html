@@ -94,7 +94,7 @@
   <audio id="audio-correct" src="dingdong.mp3" preload="auto"></audio>
   <audio id="audio-wrong"   src="ddang.mp3"    preload="auto"></audio>
 
-  <!-- 샘플(로드 실패시) -->
+  <!-- 샘플 문제 -->
   <script id="questionsData" type="application/json">[
     { "id": 1, "type": "fill", "q": "창세기 1장 1절: 태초에 하나님이 (      )과 (      )을 창조하시니라",
       "hint": "둘 다 자연입니다. 공백/조사 무시", "ignoreSpaces": true,
@@ -109,8 +109,10 @@
     const FILE_URL="questions_tuned_70.json";
     let ALL=[],PICK=[],MODE=null,idx=0,score=0;
     const TOTAL=25;
+    const POINTS_PER_CORRECT=4; // 정답당 4점 (25문제 = 100점)
 
     // refs
+    function $(id){return document.querySelector(id);}
     const home=$('#screen-home'),quiz=$('#screen-quiz'),done=$('#screen-finish');
     const qnoEl=$('#qno'),qtextEl=$('#qtext'),mcWrap=$('#mc-wrap'),fillWrap=$('#fill-wrap');
     const fillInput=$('#fill-input'),hintBtn=$('#btn-hint'),hintBox=$('#hint');
@@ -143,7 +145,7 @@
           copy.choices=Array.isArray(copy.choices)?copy.choices:[];
           if(copy.answerIndex===undefined && copy.answer!==undefined) copy.answerIndex=Number(copy.answer);
           if(!(Number.isInteger(copy.answerIndex)&&copy.answerIndex>=0&&copy.answerIndex<copy.choices.length)){
-            copy.answerIndex=-1; // 이상치 → 자동 스킵 대상
+            copy.answerIndex=-1;
           }
           delete copy.answer;
         }else{
@@ -225,34 +227,25 @@
     function onSubmit(){
       const q=PICK[idx];
 
-      // 1) 선택/입력 유무 선확인 (여기서 바로 return)
+      // 선택/입력 안 한 경우
       if(q.type==='mc'){
         const sel=document.querySelector('input[name="mc"]:checked');
-        if(!sel){
-          statusEl.innerHTML=`<span class="bad">먼저 답을 선택해 주세요</span>`;
-          return;
-        }
+        if(!sel){ statusEl.innerHTML=`<span class="bad">먼저 답을 선택해 주세요</span>`; return; }
       }else{
         const user=fillInput.value.trim();
-        if(!user){
-          statusEl.innerHTML=`<span class="bad">먼저 정답을 입력해 주세요</span>`;
-          hintBox.textContent=q.hint||'힌트 없음';
-          return;
-        }
+        if(!user){ statusEl.innerHTML=`<span class="bad">먼저 정답을 입력해 주세요</span>`; hintBox.textContent=q.hint||'힌트 없음'; return; }
       }
 
-      // 2) 객관식 정답 인덱스 이상치면 자동 스킵(막힘 방지)
       if(q.type==='mc'&&(q.answerIndex===-1||q.answerIndex>=(q.choices?.length||0))){
         console.warn(`문항 ${idx+1} 정답 인덱스 이상 → 자동 건너뜀`);
         return nextQuestion();
       }
 
-      // 3) 정상 채점
       const result=checkAnswer(q);
       if(result){
         audioOK.currentTime=0; audioOK.play().catch(()=>{});
         statusEl.innerHTML=`<span class="ok">딩동댕! 정답이에요</span>`;
-        if(MODE==='exam'){ score++; autoNext(); }
+        if(MODE==='exam'){ score += POINTS_PER_CORRECT; autoNext(); }
         else setTimeout(nextQuestion,450);
       }else{
         audioNO.currentTime=0; audioNO.play().catch(()=>{});
@@ -264,10 +257,18 @@
 
     function autoNext(){ submitBtn.disabled=true; setTimeout(nextQuestion,450); }
     function nextQuestion(){ if(idx<TOTAL-1){ idx++; render(); } else finish(); }
+
     function finish(){
       show('done'); bar.style.width='100%';
-      if(MODE==='practice'){ finishTitle.textContent='수고했습니다♥'; finishDesc.textContent='연습문제를 모두 풀었어요.'; }
-      else { finishTitle.textContent='실전 결과'; finishDesc.innerHTML=`총점: <b>${score} / ${TOTAL}</b> 점`; }
+      if(MODE==='practice'){
+        finishTitle.textContent='수고했습니다♥';
+        finishDesc.textContent='연습문제를 모두 풀었어요.';
+      }else{
+        const maxScore = TOTAL * POINTS_PER_CORRECT;
+        const percent = Math.round((score / maxScore) * 100);
+        finishTitle.textContent='실전 결과';
+        finishDesc.innerHTML=`점수: <b>${score} / ${maxScore}</b> (${percent}%)`;
+      }
     }
 
     function normalize(s,ignore){ if(typeof s!=='string') return ''; let t=s.trim().toLowerCase(); if(ignore) t=t.replace(/\s+/g,''); return t; }
@@ -275,7 +276,7 @@
       if(q.type==='mc'){
         const sel=document.querySelector('input[name="mc"]:checked'); if(!sel) return null;
         const idxSel=Number(sel.value);
-        if(q.answerIndex===undefined && q.answer!==undefined) q.answerIndex=Number(q.answer); // 호환
+        if(q.answerIndex===undefined && q.answer!==undefined) q.answerIndex=Number(q.answer);
         return idxSel===Number(q.answerIndex);
       }else{
         const user=normalize(fillInput.value,!!q.ignoreSpaces); if(!user) return null;
@@ -283,9 +284,6 @@
         return list.some(ans=>normalize(String(ans),!!q.ignoreSpaces)===user);
       }
     }
-
-    // tiny $
-    function $(id){ return document.querySelector(id); }
   </script>
 </body>
 </html>
