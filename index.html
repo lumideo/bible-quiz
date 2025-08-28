@@ -94,30 +94,23 @@
   <audio id="audio-correct" src="dingdong.mp3" preload="auto"></audio>
   <audio id="audio-wrong"   src="ddang.mp3"    preload="auto"></audio>
 
-  <!-- 샘플 문제 -->
+  <!-- 샘플 -->
   <script id="questionsData" type="application/json">[
-    { "id": 1, "type": "fill", "q": "창세기 1장 1절: 태초에 하나님이 (      )과 (      )을 창조하시니라",
-      "hint": "둘 다 자연입니다. 공백/조사 무시", "ignoreSpaces": true,
-      "answers": ["하늘과땅","하늘 땅","하늘과 땅"] },
-    { "id": 2, "type": "mc", "q": "예수님의 제자는 몇 명이었나요?",
-      "choices": ["10명","12명","70명","3명"], "answerIndex": 1 },
-    { "id": 3, "type": "mc", "q": "다윗이 물리친 거인의 이름은?",
-      "choices": ["골리앗","바알","느부갓네살","사울"], "answerIndex": 0 }
+    { "id": 1, "type": "fill", "q": "창세기 1장 1절: 태초에 하나님이 (      )과 (      )을 창조하시니라", "answers": ["하늘과땅","하늘 땅","하늘과 땅"], "hint": "둘 다 자연 (창세기 1:1)" }
   ]</script>
 
   <script>
     const FILE_URL="questions_tuned_70.json";
     let ALL=[],PICK=[],MODE=null,idx=0,score=0;
     const TOTAL=25;
-    const POINTS_PER_CORRECT=4; // 정답당 4점 (25문제 = 100점)
+    const POINTS_PER_CORRECT=4;
 
-    // refs
     function $(id){return document.querySelector(id);}
     const home=$('#screen-home'),quiz=$('#screen-quiz'),done=$('#screen-finish');
     const qnoEl=$('#qno'),qtextEl=$('#qtext'),mcWrap=$('#mc-wrap'),fillWrap=$('#fill-wrap');
     const fillInput=$('#fill-input'),hintBtn=$('#btn-hint'),hintBox=$('#hint');
-    const submitBtn=$('#btn-submit'),skipBtn=$('#btn-skip'),statusEl=$('#status');
-    const bar=$('#bar'),modeTag=$('#modeTag'),finishTitle=$('#finish-title'),finishDesc=$('#finish-desc');
+    const submitBtn=$('#btn-submit'),statusEl=$('#status'),bar=$('#bar');
+    const modeTag=$('#modeTag'),finishTitle=$('#finish-title'),finishDesc=$('#finish-desc');
     const audioOK=$('#audio-correct'),audioNO=$('#audio-wrong');
 
     (async function init(){ ALL=await loadQuestions(); attachEvents(); })();
@@ -140,7 +133,6 @@
       return flat.map((q,i)=>{
         const copy={...q};
         if(copy.type) copy.type=String(copy.type).toLowerCase();
-
         if(copy.type==='mc'){
           copy.choices=Array.isArray(copy.choices)?copy.choices:[];
           if(copy.answerIndex===undefined && copy.answer!==undefined) copy.answerIndex=Number(copy.answer);
@@ -157,12 +149,8 @@
           delete copy.answer;
           if(copy.ignoreSpaces===undefined && copy.answers.some(a=>String(a).includes(' '))) copy.ignoreSpaces=true;
         }
-        if(copy.id===undefined) copy.id=i+1;
+        copy.id=i+1;
         return copy;
-      }).filter(q=>{
-        if(q.type==='mc') return q.choices.length>0;
-        if(q.type==='fill') return q.answers.length>0;
-        return false;
       });
     }
 
@@ -174,11 +162,14 @@
       $('#btn-retry-exam').onclick=()=>start('exam');
       $('#btn-home').onclick=()=>show('home');
       submitBtn.onclick=onSubmit;
-      skipBtn.onclick=nextQuestion;
       hintBtn.onclick=()=>{
         const q=PICK[idx]; if(!q) return;
-        hintBox.textContent=q.hint||'힌트 없음';
-        hintBox.style.display=(hintBox.style.display==='none'||hintBox.style.display==='')?'block':'none';
+        if(q.hint){
+          hintBox.textContent=q.hint;
+          hintBox.style.display=(hintBox.style.display==='none'||hintBox.style.display==='')?'block':'none';
+        } else {
+          hintBox.style.display='none';
+        }
       };
       fillInput.addEventListener('keydown',e=>{ if(e.key==='Enter') onSubmit(); });
     }
@@ -207,7 +198,7 @@
       qnoEl.textContent=`${idx+1} / ${TOTAL}`;
       bar.style.width=`${((idx)/TOTAL)*100}%`;
       statusEl.textContent='';
-      qtextEl.textContent=q.q||q.question||'';
+      qtextEl.textContent=q.q||'';
       hintBox.style.display='none'; hintBox.textContent=q.hint||'';
 
       if(q.type==='mc'){
@@ -226,46 +217,44 @@
 
     function onSubmit(){
       const q=PICK[idx];
-
-      // 선택/입력 안 한 경우
       if(q.type==='mc'){
         const sel=document.querySelector('input[name="mc"]:checked');
         if(!sel){ statusEl.innerHTML=`<span class="bad">먼저 답을 선택해 주세요</span>`; return; }
       }else{
         const user=fillInput.value.trim();
-        if(!user){ statusEl.innerHTML=`<span class="bad">먼저 정답을 입력해 주세요</span>`; hintBox.textContent=q.hint||'힌트 없음'; return; }
+        if(!user){ statusEl.innerHTML=`<span class="bad">먼저 정답을 입력해 주세요</span>`; return; }
       }
-
-      if(q.type==='mc'&&(q.answerIndex===-1||q.answerIndex>=(q.choices?.length||0))){
-        console.warn(`문항 ${idx+1} 정답 인덱스 이상 → 자동 건너뜀`);
-        return nextQuestion();
-      }
-
       const result=checkAnswer(q);
       if(result){
         audioOK.currentTime=0; audioOK.play().catch(()=>{});
         statusEl.innerHTML=`<span class="ok">딩동댕! 정답이에요</span>`;
-        if(MODE==='exam'){ score += POINTS_PER_CORRECT; autoNext(); }
+        if(MODE==='exam'){ score+=POINTS_PER_CORRECT; autoNext(); }
         else setTimeout(nextQuestion,450);
       }else{
         audioNO.currentTime=0; audioNO.play().catch(()=>{});
         statusEl.innerHTML=`<span class="bad">땡! 다시 시도해봐요</span>`;
         if(MODE==='exam'){ autoNext(); }
-        else{ if(q.type!=='mc'){ hintBox.textContent=q.hint||'힌트 없음'; hintBox.style.display='block'; } }
+        else{
+          if(q.type!=='mc' && q.hint){
+            hintBox.textContent=q.hint;
+            hintBox.style.display='block';
+          } else {
+            hintBox.style.display='none';
+          }
+        }
       }
     }
 
     function autoNext(){ submitBtn.disabled=true; setTimeout(nextQuestion,450); }
     function nextQuestion(){ if(idx<TOTAL-1){ idx++; render(); } else finish(); }
-
     function finish(){
       show('done'); bar.style.width='100%';
       if(MODE==='practice'){
         finishTitle.textContent='수고했습니다♥';
         finishDesc.textContent='연습문제를 모두 풀었어요.';
       }else{
-        const maxScore = TOTAL * POINTS_PER_CORRECT;
-        const percent = Math.round((score / maxScore) * 100);
+        const maxScore=TOTAL*POINTS_PER_CORRECT;
+        const percent=Math.round((score/maxScore)*100);
         finishTitle.textContent='실전 결과';
         finishDesc.innerHTML=`점수: <b>${score} / ${maxScore}</b> (${percent}%)`;
       }
@@ -276,11 +265,10 @@
       if(q.type==='mc'){
         const sel=document.querySelector('input[name="mc"]:checked'); if(!sel) return null;
         const idxSel=Number(sel.value);
-        if(q.answerIndex===undefined && q.answer!==undefined) q.answerIndex=Number(q.answer);
         return idxSel===Number(q.answerIndex);
       }else{
         const user=normalize(fillInput.value,!!q.ignoreSpaces); if(!user) return null;
-        const list=Array.isArray(q.answers)?q.answers:(Array.isArray(q.answer)?q.answer:(q.answer?[q.answer]:[]));
+        const list=Array.isArray(q.answers)?q.answers:[];
         return list.some(ans=>normalize(String(ans),!!q.ignoreSpaces)===user);
       }
     }
