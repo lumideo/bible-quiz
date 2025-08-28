@@ -62,18 +62,14 @@
     <div class="note">소리가 작다면 무음 모드 해제 후 볼륨을 올려주세요.</div>
   </section>
 
-  <!-- (없으면 WebAudio 오르골 톤으로 폴백) -->
-  <audio id="correctSound" preload="auto"><source src="./dingdongdang.mp3" type="audio/mpeg"></audio>
-  <audio id="wrongSound"   preload="auto"><source src="./orrgoll_ding.mp3" type="audio/mpeg"></audio>
-  <audio id="fanfareSound" preload="auto"><source src="./fanfare.mp3" type="audio/mpeg"></audio>
-
-  <!-- 자동 로드 실패 시 쓰는 샘플 3문항 (안전장치) -->
+  <!-- 자동 로드 실패 시 쓰는 샘플 3문항 (안전장치: JS 아님, 데이터 전용) -->
   <script id="questionsData" type="application/json">[
     { "q": "창세기 1장 1절: 태초에 하나님이 (      )와 (      )을 창조하시니라 / 하늘, 땅 (공백 무시)", "type": "fill", "answer": ["하늘과땅","하늘과 땅","하늘 땅"] },
     { "q": "예수님의 제자는 몇 명이었나요?", "type": "mc", "choices": ["10명","12명","70명","3명"], "answer": 1 },
     { "q": "다윗이 물리친 거인의 이름은?", "type": "mc", "choices": ["골리앗","바알","느부갓네살","사울"], "answer": 0 }
   ]</script>
 
+  <!-- 여기부터 실제 자바스크립트 -->
   <script>
   /* ===== 유틸 ===== */
   const byId = (id)=>document.getElementById(id);
@@ -117,75 +113,40 @@
   }
 
   /* ===== 데이터 로드(자동) ===== */
-<script>
-  /* ===== 데이터 로드(자동·진단 포함) ===== */
   let QUESTIONS = [];
-
-  // 시도할 URL 3가지 (절대 → baseURI → 상대)
+  // 절대경로 + 캐시무력화(항상 최신 70문항 강제)
+  const JSON_ABS = 'https://lumideo.github.io/bible-quiz/questions_tuned_70.json';
   const CANDIDATES = [
-    'https://lumideo.github.io/bible-quiz/questions_tuned_70.json?v=' + Date.now(),
+    JSON_ABS + '?v=' + Date.now(),
     new URL('questions_tuned_70.json', document.baseURI).href,
     './questions_tuned_70.json?v=' + Date.now()
   ];
 
-  function preprocess(list){
-    if(!Array.isArray(list)) return [];
-    return list.map((raw, i)=>{
-      const obj = {...raw};
-      const text = (obj.q||obj.question||'').toString();
-      let qText = text, hintFromSlash = '';
-      const p = text.indexOf('/');
-      if(p>-1){ qText = text.slice(0,p).trim(); hintFromSlash = text.slice(p+1).trim(); }
-      const rawType = String(obj.type||'').toLowerCase();
-      let type = ['fill','short','text','주관식'].includes(rawType) ? 'fill' : 'mc';
-      const options = Array.isArray(obj.choices) ? obj.choices : (Array.isArray(obj.options)? obj.options : []);
-      let answer = obj.answer;
-      if(type==='mc' && typeof answer==='string' && /^\d+$/.test(answer)) answer = parseInt(answer,10);
-      if(type==='fill' && typeof answer==='string' && answer.includes(',')) answer = answer.split(',').map(s=>s.trim());
-      const hint = (obj.hint && String(obj.hint).trim()) || hintFromSlash;
-      return { id: obj.id || (i+1), type, question: qText, options, answer, hint };
-    });
-  }
-
   async function autoLoadQuestions(){
-    const qc = document.getElementById('qcount');
-    let lastErr = '';
-
-    // 후보 URL을 차례대로 시도
-    for (const url of CANDIDATES) {
+    const qc = byId('qcount');
+    for(const url of CANDIDATES){
       try{
-        const res = await fetch(url, { cache: 'no-store' });
-        if(!res.ok){ lastErr = `HTTP ${res.status} @ ${url}`; continue; }
+        const res = await fetch(url, { cache:'no-store' });
+        if(!res.ok) { console.warn('로드 실패:', url, res.status); continue; }
         const data = await res.json();
         if(Array.isArray(data) && data.length){
           QUESTIONS = preprocess(data);
           if(qc) qc.textContent = String(QUESTIONS.length);
-          // 성공한 URL을 콘솔에 남김(진단용)
           console.log('[질문 로드 성공]', url, '총', QUESTIONS.length, '문항');
           return;
-        }else{
-          lastErr = `형식 오류(배열 아님) @ ${url}`;
         }
-      }catch(e){
-        lastErr = (e && e.message) ? `${e.message} @ ${url}` : `fetch 실패 @ ${url}`;
-      }
+      }catch(e){ console.warn('로드 예외:', url, e); }
     }
-
-    // 모두 실패하면: 내장 샘플 3문항으로 폴백 + 실패 이유 화면에 표기
+    // 모두 실패하면 내장 샘플(3문항)
     try{
-      const raw = document.getElementById('questionsData')?.textContent || '[]';
+      const raw = byId('questionsData')?.textContent || '[]';
       const arr = JSON.parse(raw);
       QUESTIONS = Array.isArray(arr) ? preprocess(arr) : [];
     }catch(e){ QUESTIONS = []; }
-
-    if(qc) qc.textContent = `${String(QUESTIONS.length||0)} (자동 로드 실패: ${lastErr})`;
-    console.warn('[자동 로드 실패]', lastErr);
+    if(qc) qc.textContent = String(QUESTIONS.length||0);
   }
-
   window.addEventListener('DOMContentLoaded', autoLoadQuestions);
-</script>
 
-<script>
   /* ===== 사운드(파일 우선, WebAudio 폴백) ===== */
   let audioCtx=null;
   function ensureAudio(){ try{ if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)(); if(audioCtx.state==='suspended') audioCtx.resume(); }catch(e){} }
@@ -306,5 +267,3 @@
 </main>
 </body>
 </html>
-
-
