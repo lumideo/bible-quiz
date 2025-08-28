@@ -150,8 +150,8 @@
         const res = await fetch(FILE_URL, {cache:"no-store"});
         if(!res.ok) throw new Error("fetch failed");
         const data = await res.json();
-        // 기본 유효성(최소 필드) 체크
-        return Array.isArray(data) && data.length ? data : fallback();
+        // ★ JSON 스키마 자동 호환 + 안전필터
+        return normalizeQuestions(data);
       }catch(e){
         console.warn("문제 파일 로드 실패 → 샘플 사용", e);
         return fallback();
@@ -160,6 +160,57 @@
     function fallback(){
       const raw = document.getElementById('questionsData').textContent;
       return JSON.parse(raw);
+    }
+
+    // ★ 스키마 호환 + 안전 패치
+    function normalizeQuestions(data){
+      const flat = Array.isArray(data) ? data.flat(Infinity) : [];
+
+      return flat
+        .map((q, i) => {
+          const copy = {...q};
+
+          // 타입 보정
+          if (copy.type) copy.type = String(copy.type).toLowerCase();
+
+          if (copy.type === 'mc') {
+            // choices 보정
+            copy.choices = Array.isArray(copy.choices) ? copy.choices : [];
+            // answerIndex ← answer 호환
+            if (copy.answerIndex === undefined && copy.answer !== undefined) {
+              copy.answerIndex = Number(copy.answer);
+            }
+            // 인덱스 범위 보정(잘못되면 -1로 표시)
+            if (!(Number.isInteger(copy.answerIndex) && copy.answerIndex >= 0 && copy.answerIndex < copy.choices.length)) {
+              copy.answerIndex = -1;
+            }
+            delete copy.answer;
+          } else { // fill
+            // answers ← answer 호환(단일도 배열화)
+            if (!Array.isArray(copy.answers)) {
+              if (Array.isArray(copy.answer)) copy.answers = copy.answer;
+              else if (copy.answer !== undefined) copy.answers = [copy.answer];
+              else copy.answers = [];
+            }
+            delete copy.answer;
+
+            // 공백 무시 자동 설정(정답 중 공백 포함되면)
+            if (copy.ignoreSpaces === undefined && copy.answers.some(a => String(a).includes(' '))) {
+              copy.ignoreSpaces = true;
+            }
+          }
+
+          // id 없으면 부여
+          if (copy.id === undefined) copy.id = i + 1;
+
+          return copy;
+        })
+        // 완전 불량 문항은 제거(막힘 방지)
+        .filter(q => {
+          if (q.type === 'mc') return Array.isArray(q.choices) && q.choices.length > 0;
+          if (q.type === 'fill') return Array.isArray(q.answers) && q.answers.length > 0;
+          return false;
+        });
     }
 
     function attachEvents(){
@@ -199,7 +250,7 @@
 
     function pickRandom(arr, n){
       const copy = [...arr];
-      // 피셔-예이츠
+      // 피셔-예이츠 셔플
       for(let i=copy.length-1;i>0;i--){
         const j = Math.floor(Math.random()*(i+1));
         [copy[i],copy[j]]=[copy[j],copy[i]];
@@ -215,7 +266,7 @@
       statusEl.textContent = '';
 
       // 본문
-      qtextEl.textContent = q.q;
+      qtextEl.textContent = q.q || q.question || '';
       hintBox.style.display = 'none';
       hintBox.textContent = q.hint || '';
 
@@ -231,12 +282,12 @@
           div.innerHTML = `<input type="radio" name="mc" value="${i}" id="${id}"><span>${c}</span>`;
           mcWrap.appendChild(div);
         });
-        skipBtn.style.display = (MODE==='exam') ? 'none' : 'none'; // 연습도 건너뛰기 없음
+        skipBtn.style.display = 'none'; // 연습/실전 모두 스킵 버튼 숨김
       }else{
         mcWrap.style.display = 'none';
         fillWrap.style.display = 'block';
         fillInput.value = '';
-        skipBtn.style.display = (MODE==='exam') ? 'none' : 'none';
+        skipBtn.style.display = 'none';
       }
 
       // 버튼 상태
@@ -245,6 +296,13 @@
 
     function onSubmit(){
       const q = PICK[idx];
+
+      // ★ 안전패치: 객관식인데 정답 인덱스가 이상하면 자동 다음으로(막힘 방지)
+      if (q.type === 'mc' && (q.answerIndex === -1 || q.answerIndex >= (q.choices?.length || 0))) {
+        console.warn(`문항 ${idx+1} 정답 인덱스 이상 → 자동 건너뜀`);
+        return nextQuestion();
+      }
+
       const correct = checkAnswer(q);
       if (correct){
         audioOK.currentTime=0; audioOK.play().catch(()=>{});
@@ -259,8 +317,7 @@
         if(MODE==='exam'){ // 틀려도 바로 다음으로
           autoNext();
         }else{
-          // 연습: 같은 문제 계속
-          // 주관식이면 힌트 자동 열기
+          // 연습: 같은 문제 계속, 주관식이면 힌트 자동 열기
           if(q.type!=='mc' && q.hint){
             hintBox.style.display='block';
           }
@@ -299,7 +356,6 @@
       if(typeof s !== 'string') return '';
       let t = s.trim().toLowerCase();
       if(ignoreSpaces) t = t.replace(/\s+/g,'');
-      // 한글 받침/자모 분리까지는 과하지 않게끔 처리
       return t;
     }
 
@@ -308,11 +364,13 @@
         const sel = document.querySelector('input[name="mc"]:checked');
         if(!sel) return false;
         const idxSel = Number(sel.value);
+        // 호환: answer만 있는 JSON도 대비
+        if (q.answerIndex === undefined && q.answer !== undefined) q.answerIndex = Number(q.answer);
         return idxSel === Number(q.answerIndex);
       }else{
         const user = normalize(fillInput.value, !!q.ignoreSpaces);
         if(!user) return false;
-        const list = Array.isArray(q.answers) ? q.answers : [];
+        const list = Array.isArray(q.answers) ? q.answers : (Array.isArray(q.answer)?q.answer:(q.answer?[q.answer]:[]));
         return list.some(ans => normalize(String(ans), !!q.ignoreSpaces) === user);
       }
     }
