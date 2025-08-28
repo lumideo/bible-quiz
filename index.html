@@ -118,33 +118,33 @@
 
   /* ===== 데이터 로드(자동) ===== */
   let QUESTIONS = [];
-  // 현재 페이지 폴더 기준 절대 URL 생성 + 최신 강제
-  const DEFAULT_URL = new URL(
-    'questions_tuned_70.json',
-    location.origin + location.pathname.replace(/[^/]*$/, '')
-  ).toString();
+  // 절대경로 + 캐시무력화(항상 최신 70문항 강제)
+  const DEFAULT_URL = 'https://lumideo.github.io/bible-quiz/questions_tuned_70.json?v=' + Date.now();
 
   async function autoLoadQuestions(){
-    // 1) 저장소의 70문항 JSON 자동 로드
+    // 1) 70문항 JSON 자동 로드 (캐시 무시)
     try{
-      const res = await fetch(DEFAULT_URL, { cache: 'reload' });
-      if(res.ok){
-        const data = await res.json();
-        if(Array.isArray(data) && data.length){
-          QUESTIONS = preprocess(data);
-          byId('qcount').textContent = String(QUESTIONS.length);
-          return;
-        }
+      const res = await fetch(DEFAULT_URL, { cache: 'no-store' });
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      const data = await res.json();
+      if(Array.isArray(data) && data.length){
+        QUESTIONS = preprocess(data);
+        const qc = byId('qcount');
+        if(qc) qc.textContent = String(QUESTIONS.length);
+        return;
       }
-    }catch(e){ console.warn('자동 로드 실패:', e); }
+    }catch(err){
+      console.warn('[자동 로드 실패]', err);
+    }
 
-    // 2) 실패 시 내장 샘플 사용
+    // 2) 실패 시 내장 샘플(3문항) 사용
     try{
       const raw = byId('questionsData')?.textContent || '[]';
       const arr = JSON.parse(raw);
       QUESTIONS = Array.isArray(arr) ? preprocess(arr) : [];
     }catch(e){ QUESTIONS = []; }
-    byId('qcount').textContent = String(QUESTIONS.length||0);
+    const qc = byId('qcount');
+    if(qc) qc.textContent = String(QUESTIONS.length||0);
   }
   window.addEventListener('DOMContentLoaded', autoLoadQuestions);
 
@@ -187,12 +187,12 @@
   async function startGame(){
     ensureAudio();
 
-    // 70개 미만이면 한 번 더 로드 시도 + 시작 차단
+    // 70문항 미만이면 한 번 더 로드 시도 + 시작 차단
     if(!Array.isArray(QUESTIONS) || QUESTIONS.length < 50){
       await autoLoadQuestions();
     }
     if(!Array.isArray(QUESTIONS) || QUESTIONS.length < 50){
-      alert('문제를 자동으로 불러오지 못했어요.\n잠시 후 새로고침(F5) 후 다시 시도해 주세요.');
+      alert('문제를 자동으로 불러오지 못했어요.\n새로고침(⌘/Ctrl+Shift+R) 후 다시 시도해 주세요.');
       return;
     }
 
@@ -268,5 +268,3 @@
 </main>
 </body>
 </html>
-
-
