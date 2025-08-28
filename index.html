@@ -2,387 +2,88 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>초등2부 성경퀴즈</title>
   <style>
-    :root{
-      --bg:#f7f8fb;--fg:#222;--sub:#666;--brand:#284BA0;--ok:#1a9d5c;--bad:#c0392b;--card:#fff;
+    :root {
+      --bg:#f8fafc; --card:#ffffff; --text:#111827; --muted:#6b7280; --brand:#284BA0;
+      --ok:#16a34a; --bad:#dc2626;
     }
-    *{box-sizing:border-box}
-    body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,Segoe UI,Roboto,Pretendard,Apple SD Gothic Neo,Noto Sans KR,sans-serif}
-    .wrap{max-width:960px;margin:0 auto;padding:24px}
-    header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
-    h1{font-size:clamp(20px,4vw,36px);margin:0;color:var(--brand)}
-    .card{background:var(--card);border-radius:16px;box-shadow:0 6px 24px rgba(0,0,0,.06);padding:20px}
+    html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR,sans-serif;}
+    .wrap{max-width:840px;margin:40px auto;padding:0 16px;}
+    .card{background:var(--card);border-radius:16px;box-shadow:0 6px 24px rgba(0,0,0,.06);padding:24px;}
+    h1{margin:0 0 6px;font-size:28px}
+    .sub{color:var(--muted);margin-bottom:24px}
     .row{display:flex;gap:12px;flex-wrap:wrap}
-    button{border:0;border-radius:12px;padding:12px 16px;font-weight:700;cursor:pointer}
-    .primary{background:var(--brand);color:#fff}
-    .ghost{background:#eef2ff;color:#1f3a8a}
-    .muted{background:#eceff3;color:#334155}
-    .ok{background:var(--ok);color:#fff}
-    .bad{background:var(--bad);color:#fff}
-    .hidden{display:none}
-    .meta{color:var(--sub);font-size:14px}
-    .q-title{font-size:20px;line-height:1.5;margin:0 0 12px}
+    .btn{border:none;border-radius:12px;padding:12px 16px;cursor:pointer;font-weight:700}
+    .btn.primary{background:var(--brand);color:#fff}
+    .btn.ghost{background:#eef2ff;color:#1f2937}
+    .btn.small{padding:8px 12px;font-weight:600}
+    .muted{color:var(--muted)}
+    .qno{font-weight:700;color:var(--brand)}
+    .qtext{font-size:20px;margin:10px 0 16px}
     .choices{display:grid;gap:10px}
-    .choice{background:#f4f7ff;border:2px solid transparent;border-radius:12px;padding:12px;cursor:pointer;text-align:left}
-    .choice:hover{border-color:#c7d2fe}
-    .choice.correct{border-color:var(--ok);background:#effaf4}
-    .choice.wrong{border-color:var(--bad);background:#fdecea}
-    .progress{height:10px;background:#e5e7eb;border-radius:999px;overflow:hidden}
-    .bar{height:100%;background:linear-gradient(90deg,var(--brand),#6aa7ff);width:0%}
-    .footer{display:flex;gap:10px;justify-content:space-between;align-items:center;margin-top:16px}
-    .hint{font-size:14px;color:#0f172a;background:#fff7ed;border-left:4px solid #f59e0b;padding:10px;border-radius:6px}
-    .pill{display:inline-block;background:#eef2ff;color:#1f3a8a;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:700}
-    .center{display:flex;flex-direction:column;align-items:center;gap:16px}
-    .score-big{font-size:48px;font-weight:900}
-    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
-    .small{font-size:12px;color:var(--sub)}
+    .choice{border:1px solid #e5e7eb;border-radius:12px;padding:10px 12px;cursor:pointer}
+    .choice input{margin-right:8px}
+    .answerBox{display:flex;gap:10px;margin:8px 0 0}
+    input[type="text"]{flex:1;padding:12px;border:1px solid #e5e7eb;border-radius:10px;font-size:16px}
+    .hint{background:#fffbe6;border:1px dashed #f59e0b;color:#92400e;border-radius:10px;padding:10px 12px;margin-top:10px;display:none}
+    .status{margin-top:12px;font-weight:700}
+    .ok{color:var(--ok)} .bad{color:var(--bad)}
+    .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+    .progress{height:8px;background:#e5e7eb;border-radius:999px;overflow:hidden}
+    .progress > div{height:100%;background:var(--brand);width:0%}
+    .footer{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+    .center{text-align:center}
   </style>
 </head>
 <body>
   <div class="wrap">
-    <header>
+    <div id="screen-home" class="card">
       <h1>초등2부 성경퀴즈</h1>
-      <div class="meta" id="appMeta"></div>
-    </header>
-
-    <!-- Main Menu -->
-    <section id="menu" class="card">
-      <div class="center">
-        <p class="meta">모드를 선택해 시작하세요</p>
-        <div class="row">
-          <button class="primary" id="btnPractice">연습문제</button>
-          <button class="ghost" id="btnExam">실전문제</button>
-        </div>
-        <div style="width:100%;max-width:520px">
-          <div class="card" style="background:#f8fafc">
-            <div style="display:flex;gap:10px;align-items:center;justify-content:space-between">
-              <div>
-                <div class="meta">출제 방식</div>
-                <div><strong>전체 70문제 중 매회 25문제</strong>가 랜덤으로 출제됩니다.</div>
-              </div>
-              <span class="pill">랜덤 25</span>
-            </div>
-          </div>
-        </div>
-        <div class="card" style="background:#fff;max-width:640px">
-          <div class="meta" style="margin-bottom:8px">문제 데이터 설정</div>
-          <label class="small">GitHub RAW JSON URL</label>
-          <input id="jsonUrl" style="width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:10px" placeholder="예) https://raw.githubusercontent.com/USER/REPO/branch/questions.json" />
-          <div class="small" style="margin-top:8px">URL이 비어있으면 내장된 샘플 5문제로 테스트됩니다.</div>
-        </div>
+      <div class="sub">얘들아 문제를 풀어 볼까요?</div>
+      <div class="row">
+        <button class="btn primary" id="btn-practice">연습문제</button>
+        <button class="btn ghost" id="btn-exam">실전문제</button>
       </div>
-    </section>
+      <p class="muted" style="margin-top:14px">
+        전체 70문제 중 매번 <b>랜덤 25문제</b>가 출제돼요. (재도전할 때마다 새로 섞여요!)
+      </p>
+    </div>
 
-    <!-- Quiz Area -->
-    <section id="quiz" class="card hidden">
-      <div class="row" style="justify-content:space-between;align-items:center">
+    <div id="screen-quiz" class="card" style="display:none">
+      <div class="topbar">
         <div>
-          <div class="pill" id="modePill">모드</div>
-          <div class="meta" id="counter">문제 1/25</div>
+          <div><span id="modeTag" class="muted"></span></div>
+          <div><span class="qno" id="qno">1 / 25</span></div>
         </div>
-        <div style="min-width:200px;width:40%">
-          <div class="progress"><div class="bar" id="bar"></div></div>
+        <button class="btn small ghost" id="btn-exit">처음으로</button>
+      </div>
+      <div class="progress"><div id="bar"></div></div>
+
+      <div id="qwrap">
+        <div class="qtext" id="qtext">문제 텍스트</div>
+        <div id="mc-wrap" class="choices"></div>
+
+        <div id="fill-wrap" style="display:none">
+          <div class="answerBox">
+            <input id="fill-input" type="text" placeholder="정답을 입력해요" autocomplete="off" />
+            <button class="btn small ghost" id="btn-hint">힌트</button>
+          </div>
+          <div id="hint" class="hint"></div>
         </div>
-      </div>
 
-      <h2 class="q-title" id="qTitle"></h2>
-      <div id="hintBox" class="hint hidden"></div>
-      <div id="choices" class="choices"></div>
-      <div id="subjectiveBox" class="hidden">
-        <input id="answerInput" class="mono" style="width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:10px" placeholder="정답을 입력하세요" />
-        <div class="row" style="margin-top:10px">
-          <button id="btnHint" class="muted">힌트 보기</button>
-          <button id="btnSubmit" class="primary">정답 제출</button>
+        <div class="footer">
+          <button class="btn primary" id="btn-submit">제출하기</button>
+          <button class="btn ghost" id="btn-skip" style="display:none">다음 문제</button>
         </div>
+
+        <div id="status" class="status"></div>
       </div>
+    </div>
 
-      <div class="footer">
-        <div class="meta" id="feedback"></div>
-        <div class="row">
-          <button id="btnPrev" class="muted">이전</button>
-          <button id="btnNext" class="primary">다음</button>
-        </div>
-      </div>
-    </section>
-
-    <!-- Result -->
-    <section id="result" class="card hidden">
-      <div class="center">
-        <div class="score-big" id="finalScore">0 / 25</div>
-        <div id="remark" class="meta"></div>
-        <div class="row">
-          <button id="btnRetry" class="ghost">다시 풀기 (새로운 25문제)</button>
-          <button id="btnHome" class="muted">메인으로</button>
-        </div>
-      </div>
-      <div style="margin-top:16px">
-        <details>
-          <summary>틀린 문제 다시 보기</summary>
-          <ol id="reviewList"></ol>
-        </details>
-      </div>
-    </section>
-
-    <audio id="sfx-correct" preload="auto" src="dingdong.mp3"></audio>
-    <audio id="sfx-wrong" preload="auto" src="ddang.mp3"></audio>
-  </div>
-
-<script>
-/* =====================
-  데이터 스키마
-  {
-    id: Number,                    // 고유번호 (PDF 순번 권장)
-    type: 'mc' | 'fill' | 'ox',    // 객관식/주관식/ OX(선택형으로 처리)
-    question: '문항 내용',
-    choices: ['보기1','보기2',...], // mc/ox 전용
-    answer: 1 or ['정답','정답2'], // mc는 정답 인덱스(0기준), fill은 허용 문자열 배열
-    hint: '힌트(선택)'
-  }
-===================== */
-
-const appMeta = document.getElementById('appMeta');
-appMeta.textContent = new Date().toLocaleDateString('ko-KR', { dateStyle: 'medium' });
-
-// 샘플 데이터 (5문제) – GitHub URL이 없을 때 사용
-const SAMPLE = [
-  {id:4,type:'fill',question:'태초에 하나님이 (     )를 창조하시니라. / 창 1:1',answer:['천지'],hint:'두 글자(ㄴㅈ) → 하늘+땅의 한자어'},
-  {id:5,type:'mc',question:'하나님은 세상을 며칠 동안 만드셨나요?',choices:['5일','6일','7일','8일'],answer:1},
-  {id:16,type:'fill',question:'다시는 물로 심판하지 않겠다는 약속의 증거는?',answer:['무지개'],hint:'하늘에 뜨는 색색의 활'},
-  {id:26,type:'mc',question:'아브라함이 100세에 낳은 약속의 아들 이름은?',choices:['이스마엘','이삭','롯','니므롯'],answer:1},
-  {id:37,type:'mc',question:'바로의 꿈을 해석한 요셉에게 맡겨진 직책은?',choices:['비서실장','국방장관','총리','시위대장'],answer:2}
-];
-
-// 상태
-let ALL = [];           // 전체 70문제
-let PICKED = [];        // 매회 25문제
-let MODE = 'practice';  // 'practice' | 'exam'
-let idx = 0;            // 현재 인덱스 (0~24)
-let score = 0;          // 실전 점수
-let answered = {};      // 사용자의 답안 기록 {id: {correct:boolean, userAnswer:any}}
-
-// 엘리먼트 참조
-const menu = document.getElementById('menu');
-const quiz = document.getElementById('quiz');
-const result = document.getElementById('result');
-const qTitle = document.getElementById('qTitle');
-const hintBox = document.getElementById('hintBox');
-const choicesBox = document.getElementById('choices');
-const subjectiveBox = document.getElementById('subjectiveBox');
-const answerInput = document.getElementById('answerInput');
-const btnHint = document.getElementById('btnHint');
-const btnSubmit = document.getElementById('btnSubmit');
-const btnPrev = document.getElementById('btnPrev');
-const btnNext = document.getElementById('btnNext');
-const counter = document.getElementById('counter');
-const bar = document.getElementById('bar');
-const modePill = document.getElementById('modePill');
-const feedback = document.getElementById('feedback');
-const finalScore = document.getElementById('finalScore');
-const remark = document.getElementById('remark');
-const reviewList = document.getElementById('reviewList');
-const jsonUrl = document.getElementById('jsonUrl');
-
-const sfxCorrect = document.getElementById('sfx-correct');
-const sfxWrong = document.getElementById('sfx-wrong');
-
-// 유틸
-const shuffle = arr => arr.map(v=>[Math.random(),v]).sort((a,b)=>a[0]-b[0]).map(x=>x[1]);
-const pickN = (arr,n) => shuffle(arr).slice(0, n);
-const normalize = s => (s+"").trim().replace(/\s+/g,'').toLowerCase();
-
-async function loadData(){
-  const url = jsonUrl.value.trim();
-  if(!url){ ALL = SAMPLE; return; }
-  try{
-    const res = await fetch(url);
-    if(!res.ok) throw new Error('네트워크 오류');
-    const data = await res.json();
-    if(!Array.isArray(data)) throw new Error('JSON 배열이 아닙니다');
-    ALL = data;
-  }catch(e){
-    alert('문제 JSON 로드에 실패하여 샘플 5문제로 시작합니다.\n오류: '+e.message);
-    ALL = SAMPLE;
-  }
-}
-
-function start(mode){
-  MODE = mode;
-  idx = 0; score = 0; answered = {};
-  PICKED = pickN(ALL, Math.min(25, ALL.length));
-
-  menu.classList.add('hidden');
-  result.classList.add('hidden');
-  quiz.classList.remove('hidden');
-
-  modePill.textContent = mode==='practice' ? '연습모드: 정답을 맞춰야 넘어가요' : '실전모드: 바로 채점 후 다음으로';
-  render();
-}
-
-function render(){
-  const total = PICKED.length;
-  counter.textContent = `문제 ${idx+1}/${total}`;
-  bar.style.width = `${((idx)/total)*100}%`;
-  feedback.textContent = '';
-  hintBox.classList.add('hidden');
-
-  const q = PICKED[idx];
-  qTitle.textContent = `${idx+1}. ${q.question}`; // 모든 문제 번호 매김
-
-  choicesBox.innerHTML = '';
-  subjectiveBox.classList.add('hidden');
-
-  if(q.type === 'mc' || q.type === 'ox'){
-    choicesBox.classList.remove('hidden');
-    const list = q.choices || [];
-    list.forEach((choice,i)=>{
-      const btn = document.createElement('button');
-      btn.className = 'choice';
-      btn.innerHTML = `<strong>${i+1}.</strong> ${choice}`; // 보기에도 번호 표시
-      btn.onclick = ()=>handleChoice(i);
-      choicesBox.appendChild(btn);
-    });
-  }else if(q.type === 'fill'){
-    choicesBox.classList.add('hidden');
-    subjectiveBox.classList.remove('hidden');
-    answerInput.value = '';
-    btnHint.onclick = ()=>{
-      if(q.hint){ hintBox.textContent = '힌트: '+q.hint; }
-      else { hintBox.textContent = '힌트가 준비되지 않았어요. (JSON에 "hint"를 추가해 주세요)'; }
-      hintBox.classList.remove('hidden');
-    };
-    btnSubmit.onclick = handleSubmit;
-  }
-
-  btnPrev.disabled = idx===0;
-  btnNext.textContent = idx===total-1 ? '제출' : '다음';
-}
-
-function ding(){ try{sfxCorrect.currentTime=0; sfxCorrect.play();}catch(_){} }
-function dang(){ try{sfxWrong.currentTime=0; sfxWrong.play();}catch(_){} }
-
-function handleChoice(i){
-  const q = PICKED[idx];
-  const nodes = [...document.querySelectorAll('.choice')];
-  const correct = (i === q.answer);
-
-  nodes.forEach((n,k)=>{
-    n.disabled = true;
-    if(k===q.answer) n.classList.add('correct');
-  });
-
-  if(correct){
-    feedback.textContent = '딩동댕! 정답이에요';
-    feedback.style.color = 'var(--ok)';
-    ding();
-  }else{
-    feedback.textContent = '땡! 틀렸어요';
-    feedback.style.color = 'var(--bad)';
-    nodes[i].classList.add('wrong');
-    dang();
-  }
-
-  answered[q.id] = {correct, userAnswer:i};
-
-  if(MODE==='exam'){
-    // 정답이든 아니든 잠시 후 자동 다음
-    setTimeout(next, 650);
-    if(correct) score++;
-  }else{
-    // 연습: 맞춰야 다음으로
-    if(correct){
-      setTimeout(next, 400);
-    }
-  }
-}
-
-function handleSubmit(){
-  const q = PICKED[idx];
-  const user = normalize(answerInput.value);
-  const answers = (q.answer || []).map(normalize);
-  const correct = answers.includes(user);
-
-  if(correct){
-    feedback.textContent = '딩동댕! 정답이에요';
-    feedback.style.color = 'var(--ok)';
-    ding();
-  }else{
-    feedback.textContent = '땡! 다시 생각해 보자';
-    feedback.style.color = 'var(--bad)';
-    dang();
-  }
-
-  answered[q.id] = {correct, userAnswer:answerInput.value};
-
-  if(MODE==='exam'){
-    if(correct) score++;
-    setTimeout(next, 650);
-  }else{
-    // 연습: 맞출 때까지 대기 (다음 버튼 비활성화)
-  }
-}
-
-function prev(){ if(idx>0){ idx--; render(); } }
-function next(){
-  const total = PICKED.length;
-  if(idx < total-1){ idx++; render(); }
-  else { finish(); }
-}
-
-function finish(){
-  quiz.classList.add('hidden');
-  result.classList.remove('hidden');
-  bar.style.width = '100%';
-
-  const total = PICKED.length;
-  const calcScore = (MODE==='exam') ? score : Object.values(answered).filter(v=>v.correct).length;
-  finalScore.textContent = `${calcScore} / ${total}`;
-  remark.textContent = calcScore===total ? '완벽해요! 훌륭해요 🙌' : (calcScore>=Math.ceil(total*0.8) ? '아주 잘했어요! 👏' : '좋아요! 한 번 더 도전해볼까요?');
-
-  reviewList.innerHTML = '';
-  PICKED.forEach((q, i)=>{
-    const rec = answered[q.id];
-    if(!rec || rec.correct) return;
-    const li = document.createElement('li');
-    let ansStr = '';
-    if(q.type==='mc' || q.type==='ox') ansStr = `정답: (${q.answer+1}) ${q.choices[q.answer]}`;
-    else ansStr = `정답: ${(q.answer||[]).join(' / ')}`;
-    li.innerHTML = `<div><strong>${i+1}. ${q.question}</strong><div class="small">내 답: ${rec?.userAnswer ?? '-'} · ${ansStr}</div></div>`;
-    reviewList.appendChild(li);
-  });
-}
-
-// 네비게이션 핸들러
-btnPrev.onclick = prev;
-btnNext.onclick = ()=>{
-  if(idx === PICKED.length-1){ finish(); }
-  else{
-    // 연습모드에서 주관식/객관식 모두 정답을 맞춰야 넘어가도록 제어
-    if(MODE==='practice'){
-      const q = PICKED[idx];
-      const rec = answered[q.id];
-      if(!rec || !rec.correct){
-        feedback.textContent = '정답을 맞춰야 다음으로 넘어갈 수 있어요!';
-        feedback.style.color = 'var(--bad)';
-        dang();
-        return;
-      }
-    }
-    next();
-  }
-};
-
-// 메뉴 버튼
-document.getElementById('btnPractice').onclick = async ()=>{ await loadData(); start('practice'); };
-document.getElementById('btnExam').onclick = async ()=>{ await loadData(); start('exam'); };
-
-document.getElementById('btnRetry').onclick = ()=>{ start(MODE); };
-document.getElementById('btnHome').onclick = ()=>{
-  quiz.classList.add('hidden');
-  result.classList.add('hidden');
-  menu.classList.remove('hidden');
-};
-</script>
-</body>
-</html>
+    <div id="screen-finish" class="card center" style="display:none">
+      <h1 id="finish-title">수고했습니다♥</h1>
+      <p id="finish-desc" class="sub"></p>
+      <div class="row" style="justify-content:center">
+        <button class="btn primary" id="b
