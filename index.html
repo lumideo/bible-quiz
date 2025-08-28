@@ -62,7 +62,7 @@
     <div class="note">소리가 작다면 무음 모드 해제 후 볼륨을 올려주세요.</div>
   </section>
 
-  <!-- 사운드(없으면 WebAudio 오르골 톤으로 폴백) -->
+  <!-- (없으면 WebAudio 오르골 톤으로 폴백) -->
   <audio id="correctSound" preload="auto"><source src="./dingdongdang.mp3" type="audio/mpeg"></audio>
   <audio id="wrongSound"   preload="auto"><source src="./orrgoll_ding.mp3" type="audio/mpeg"></audio>
   <audio id="fanfareSound" preload="auto"><source src="./fanfare.mp3" type="audio/mpeg"></audio>
@@ -185,7 +185,7 @@
   window.addEventListener('DOMContentLoaded', autoLoadQuestions);
 </script>
 
-
+<script>
   /* ===== 사운드(파일 우선, WebAudio 폴백) ===== */
   let audioCtx=null;
   function ensureAudio(){ try{ if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)(); if(audioCtx.state==='suspended') audioCtx.resume(); }catch(e){} }
@@ -306,4 +306,5 @@
 </main>
 </body>
 </html>
+
 
