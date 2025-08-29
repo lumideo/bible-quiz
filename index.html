@@ -38,13 +38,13 @@
   <div class="wrap">
     <div id="screen-home" class="card">
       <h1>초등2부 성경퀴즈</h1>
-      <div class="sub"> 도전!! 넌 할수있어^^♥</div>
+      <div class="sub">얘들아 문제를 풀어 볼까요?</div>
       <div class="row">
         <button class="btn primary" id="btn-practice">연습문제</button>
         <button class="btn ghost" id="btn-exam">실전문제</button>
       </div>
       <p class="muted" style="margin-top:14px">
-        전체 70문제로 재도전할 때마다 <b>25문제 랜덤</b> 출제됩니다.
+        전체 70문제 중 매번 <b>랜덤 25문제</b>가 출제돼요. (재도전할 때마다 새로 섞여요!)
       </p>
     </div>
 
@@ -94,7 +94,7 @@
   <audio id="audio-correct" src="dingdong.mp3" preload="auto"></audio>
   <audio id="audio-wrong"   src="ddang.mp3"    preload="auto"></audio>
 
-  <!-- 샘플 -->
+  <!-- 샘플 한 문제 (실제 사용은 외부 JSON) -->
   <script id="questionsData" type="application/json">[
     { "id": 1, "type": "fill", "q": "창세기 1장 1절: 태초에 하나님이 (      )과 (      )을 창조하시니라", "answers": ["하늘과땅","하늘 땅","하늘과 땅"], "hint": "둘 다 자연 (창세기 1:1)" }
   ]</script>
@@ -105,6 +105,7 @@
     const TOTAL=25;
     const POINTS_PER_CORRECT=4;
 
+    // refs
     function $(id){return document.querySelector(id);}
     const home=$('#screen-home'),quiz=$('#screen-quiz'),done=$('#screen-finish');
     const qnoEl=$('#qno'),qtextEl=$('#qtext'),mcWrap=$('#mc-wrap'),fillWrap=$('#fill-wrap');
@@ -128,6 +129,7 @@
     }
     function fallback(){ return JSON.parse($('#questionsData').textContent); }
 
+    // JSON 정규화(+ contains 지원)
     function normalizeQuestions(data){
       const flat=Array.isArray(data)?data.flat(Infinity):[];
       return flat.map((q,i)=>{
@@ -139,8 +141,8 @@
           if(!(Number.isInteger(copy.answerIndex)&&copy.answerIndex>=0&&copy.answerIndex<copy.choices.length)){
             copy.answerIndex=-1;
           }
-          delete copy.answer;
-        }else{
+          delete copy.answer; delete copy.answers;
+        }else{ // fill
           if(!Array.isArray(copy.answers)){
             if(Array.isArray(copy.answer)) copy.answers=copy.answer;
             else if(copy.answer!==undefined) copy.answers=[copy.answer];
@@ -148,6 +150,11 @@
           }
           delete copy.answer;
           if(copy.ignoreSpaces===undefined && copy.answers.some(a=>String(a).includes(' '))) copy.ignoreSpaces=true;
+          // contains 구조 보정
+          if(copy.contains && typeof copy.contains==='object'){
+            if(!Array.isArray(copy.contains.all)) copy.contains.all = [];
+            if(!Array.isArray(copy.contains.any)) copy.contains.any = [];
+          }
         }
         copy.id=i+1;
         return copy;
@@ -162,15 +169,16 @@
       $('#btn-retry-exam').onclick=()=>start('exam');
       $('#btn-home').onclick=()=>show('home');
       submitBtn.onclick=onSubmit;
+
+      // 힌트 버튼: 연습모드에서만 동작
       hintBtn.onclick=()=>{
-        const q=PICK[idx]; if(!q) return;
-        if(q.hint){
-          hintBox.textContent=q.hint;
-          hintBox.style.display=(hintBox.style.display==='none'||hintBox.style.display==='')?'block':'none';
-        } else {
-          hintBox.style.display='none';
-        }
+        if(MODE!=='practice') return;
+        const q=PICK[idx]; if(!q||q.type==='mc') return;
+        const msg = buildHint(q);
+        if(msg){ hintBox.textContent=msg; hintBox.style.display=(hintBox.style.display==='none'||hintBox.style.display==='')?'block':'none'; }
+        else { hintBox.style.display='none'; }
       };
+
       fillInput.addEventListener('keydown',e=>{ if(e.key==='Enter') onSubmit(); });
     }
 
@@ -199,9 +207,11 @@
       bar.style.width=`${((idx)/TOTAL)*100}%`;
       statusEl.textContent='';
       qtextEl.textContent=q.q||'';
-      hintBox.style.display='none'; hintBox.textContent=q.hint||'';
+      hintBox.style.display='none'; hintBox.textContent='';
 
+      // 실전모드: 힌트 버튼 숨김, 연습모드: 주관식에서만 보이기
       if(q.type==='mc'){
+        hintBtn.style.display='none';
         fillWrap.style.display='none'; mcWrap.style.display='grid'; mcWrap.innerHTML='';
         (q.choices||[]).forEach((c,i)=>{
           const div=document.createElement('label');
@@ -211,12 +221,15 @@
         });
       }else{
         mcWrap.style.display='none'; fillWrap.style.display='block'; fillInput.value='';
+        hintBtn.style.display = (MODE==='practice') ? 'inline-block' : 'none';
       }
       submitBtn.disabled=false;
     }
 
     function onSubmit(){
       const q=PICK[idx];
+
+      // 무응답 방지
       if(q.type==='mc'){
         const sel=document.querySelector('input[name="mc"]:checked');
         if(!sel){ statusEl.innerHTML=`<span class="bad">먼저 답을 선택해 주세요</span>`; return; }
@@ -224,6 +237,7 @@
         const user=fillInput.value.trim();
         if(!user){ statusEl.innerHTML=`<span class="bad">먼저 정답을 입력해 주세요</span>`; return; }
       }
+
       const result=checkAnswer(q);
       if(result){
         audioOK.currentTime=0; audioOK.play().catch(()=>{});
@@ -235,11 +249,11 @@
         statusEl.innerHTML=`<span class="bad">땡! 다시 시도해봐요</span>`;
         if(MODE==='exam'){ autoNext(); }
         else{
-          if(q.type!=='mc' && q.hint){
-            hintBox.textContent=q.hint;
-            hintBox.style.display='block';
-          } else {
-            hintBox.style.display='none';
+          // 연습: 주관식일 때 힌트 자동 제공
+          if(q.type!=='mc'){
+            const msg = buildHint(q);
+            if(msg){ hintBox.textContent = msg; hintBox.style.display='block'; }
+            else { hintBox.style.display='none'; }
           }
         }
       }
@@ -260,20 +274,49 @@
       }
     }
 
-    function normalize(s,ignore){ if(typeof s!=='string') return ''; let t=s.trim().toLowerCase(); if(ignore) t=t.replace(/\s+/g,''); return t; }
+    // ==== 채점 & 힌트 ====
+    function normalize(s,ignore){ if(typeof s!=='string') return ''; let t=s.trim().toLowerCase(); if(ignore) t=t.replace(/\s+/g,''); t=t.replace(/[.,!?:;'"()]/g,''); return t; }
+
     function checkAnswer(q){
       if(q.type==='mc'){
         const sel=document.querySelector('input[name="mc"]:checked'); if(!sel) return null;
-        const idxSel=Number(sel.value);
-        return idxSel===Number(q.answerIndex);
-      }else{
-        const user=normalize(fillInput.value,!!q.ignoreSpaces); if(!user) return null;
-        const list=Array.isArray(q.answers)?q.answers:[];
-        return list.some(ans=>normalize(String(ans),!!q.ignoreSpaces)===user);
+        return Number(sel.value) === Number(q.answerIndex);
       }
+      // fill
+      const userRaw = fillInput.value; if(!userRaw?.trim()) return null;
+      const user = normalize(userRaw, !!q.ignoreSpaces);
+      const mode = (q.mode || (q.contains ? 'contains' : 'exact')).toLowerCase();
+
+      if(mode==='contains'){
+        const needAll = (q.contains && Array.isArray(q.contains.all)) ? q.contains.all : [];
+        const needAny = (q.contains && Array.isArray(q.contains.any)) ? q.contains.any : [];
+        const okAll = needAll.length ? needAll.every(k => user.includes(normalize(String(k), !!q.ignoreSpaces))) : true;
+        const okAny = needAny.length ? needAny.some(k => user.includes(normalize(String(k), !!q.ignoreSpaces))) : true;
+        return okAll && okAny;
+      }
+
+      if(mode==='regex' && q.pattern){
+        try{ const re=new RegExp(q.pattern,'i'); return re.test(userRaw.trim()); }
+        catch(e){ console.warn('regex error',e); return false; }
+      }
+
+      const list=Array.isArray(q.answers)?q.answers:[];
+      return list.some(ans=>normalize(String(ans),!!q.ignoreSpaces)===user);
+    }
+
+    // 연습모드용 힌트 구성: 명시적 hint > contains 키워드 > 없음
+    function buildHint(q){
+      if(q.hint) return q.hint;
+      if(q.contains){
+        const all = Array.isArray(q.contains.all) ? q.contains.all : [];
+        const any = Array.isArray(q.contains.any) ? q.contains.any : [];
+        const parts=[];
+        if(all.length) parts.push(`핵심키워드(모두 포함): ${all.join(', ')}`);
+        if(any.length) parts.push(`힌트 키워드(하나 이상): ${any.join(', ')}`);
+        if(parts.length) return parts.join(' / ');
+      }
+      return '';
     }
   </script>
 </body>
 </html>
-
-
