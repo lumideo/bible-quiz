@@ -1,95 +1,48 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>초등2부 성경퀴즈</title>
   <style>
-    :root{
-      --bg:#f7f7fb;--card:#fff;--txt:#111;--muted:#6b7280;
-      --brand:#4f46e5;--ok:#16a34a;--bad:#dc2626;
-    }
-    *{box-sizing:border-box}
-    body{margin:0;background:var(--bg);color:var(--txt);
-         font-family:system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR,sans-serif}
-    .wrap{max-width:920px;margin:0 auto;padding:18px}
-    .hero{background:linear-gradient(180deg,#eef2ff,#fff);border:1px solid #e5e7eb;border-radius:16px;padding:22px 18px;margin-top:10px}
-    h1{margin:0 0 6px;font-size:28px}
-    .sub{margin:0 0 10px;color:var(--muted)}
-    .row{display:flex;gap:10px;flex-wrap:wrap}
-    .btn{border:0;border-radius:12px;padding:12px 16px;cursor:pointer;font-weight:700}
-    .primary{background:var(--brand);color:#fff}
-    .secondary{background:#eef2ff;color:#3730a3}
-    .card{background:var(--card);border:1px solid #e5e7eb;border-radius:16px;padding:18px}
-    .hidden{display:none!important}
-
-    .q-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
-    .badge{font-size:12px;background:#eef2ff;color:#3730a3;border-radius:999px;padding:6px 10px}
-    .progress{height:10px;background:#e5e7eb;border-radius:999px;overflow:hidden;width:40%}
-    .progress>div{height:100%;background:var(--brand);width:0%}
-
-    .q-num{color:var(--muted);margin-top:6px}
-    .q-text{font-size:18px;line-height:1.5;margin:10px 0 8px}
-    .choices{display:grid;gap:10px;margin:10px 0}
-    .choice{border:1px solid #e5e7eb;border-radius:12px;padding:10px;cursor:pointer;background:#fff}
-    .choice input{margin-right:8px}
-
-    .answer input{width:100%;padding:12px;border:1px solid #d1d5db;border-radius:10px;font-size:16px}
-
-    .hint-bar{display:flex;gap:8px;margin-top:8px}
-    .hint-box{display:none;background:#fffbeb;border:1px solid #fde68a;color:#92400e;border-radius:10px;padding:10px}
-
-    .footer{display:flex;gap:8px;margin-top:12px}
-    .status{margin-top:8px;font-weight:700}
-    .ok{color:var(--ok)} .bad{color:var(--bad)}
+    body { font-family: Arial, sans-serif; background:#f9f9fc; margin:0; padding:0; }
+    .container { max-width: 800px; margin: auto; padding: 20px; }
+    h1 { text-align: center; }
+    .mode-buttons { display:flex; justify-content:center; gap:20px; margin:20px 0; }
+    .mode-buttons button { padding:10px 20px; font-size:16px; cursor:pointer; border-radius:8px; border:none; }
+    .active { background:#4b6ef5; color:white; }
+    .quiz-box { background:white; border-radius:12px; padding:20px; margin-top:20px; box-shadow:0 4px 8px rgba(0,0,0,0.1); }
+    .choices { margin-top:15px; }
+    .choices label { display:block; margin:8px 0; }
+    .hint { margin-top:10px; color:#666; font-size:14px; display:none; }
+    .result { font-weight:bold; margin-top:15px; }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <!-- 시작 화면 -->
-    <div id="hero" class="hero">
-      <h1>초등2부 성경퀴즈</h1>
-      <p class="sub">얘들아 문제를 풀어 볼까요?</p>
-      <div class="row">
-        <button id="btnPractice" class="btn primary">연습문제</button>
-        <button id="btnExam" class="btn secondary">실전문제</button>
-      </div>
+  <div class="container">
+    <h1>초등2부 성경퀴즈</h1>
+    <p style="text-align:center;">얘들아 문제를 풀어 볼까?</p>
+
+    <!-- 모드 선택 버튼 -->
+    <div class="mode-buttons">
+      <button id="practiceBtn">연습문제</button>
+      <button id="testBtn">실전문제</button>
     </div>
 
-    <!-- 문제 화면(시작을 누르면 이것만 보이게) -->
-    <div id="screen" class="card hidden">
-      <div class="q-top">
-        <span id="modeBadge" class="badge">모드</span>
-        <div class="progress"><div id="prog"></div></div>
-      </div>
-      <div id="qNum" class="q-num"></div>
-      <div id="qText" class="q-text"></div>
-
+    <!-- 퀴즈 박스 -->
+    <div id="quiz" class="quiz-box" style="display:none;">
+      <p id="progress"></p>
+      <p id="question"></p>
       <div id="choices" class="choices"></div>
-      <div id="fillWrap" class="answer hidden"><input id="fillInput" type="text" placeholder="정답을 입력하세요" autocomplete="off"></div>
-
-      <div class="hint-bar">
-        <button id="hintBtn" class="btn secondary" style="display:none">힌트 보기</button>
-      </div>
-      <div id="hintBox" class="hint-box"><span id="hintText"></span></div>
-
-      <div class="footer">
-        <button id="submitBtn" class="btn primary">제출하기</button>
-        <button id="nextBtn" class="btn secondary hidden">다음 문제</button>
-      </div>
-      <div id="status" class="status"></div>
+      <input id="answerInput" type="text" style="display:none; width:100%; padding:8px;" placeholder="정답을 입력하세요">
+      <button id="hintBtn" style="margin-top:10px;">힌트 보기</button>
+      <p id="hint" class="hint"></p>
+      <button id="submitBtn" style="margin-top:15px; padding:10px 20px;">제출하기</button>
+      <p id="result" class="result"></p>
     </div>
 
-    <!-- 결과 화면(필요 시) -->
-    <div id="result" class="card hidden">
-      <h2 style="margin:0 0 8px">수고했습니다♥</h2>
-      <div class="q-text">맞춘 개수: <b id="rightCount"></b> / <b id="totalCount"></b></div>
-      <div class="q-text">점수: <b id="percent"></b> 점</div>
-      <div class="row" style="margin-top:8px">
-        <button id="retryPractice" class="btn secondary">연습 다시하기</button>
-        <button id="retryExam" class="btn primary">실전 다시하기</button>
-      </div>
-    </div>
+    <!-- 최종 점수 -->
+    <div id="final" class="quiz-box" style="display:none; text-align:center;"></div>
   </div>
 
   <!-- 사운드 -->
@@ -97,222 +50,105 @@
   <audio id="audio-wrong"   src="ddang.mp3"    preload="auto"></audio>
 
   <script>
-  // ===== 상태 =====
-  const S = { all:[], pool:[], idx:0, mode:'practice', correct:0, total:25 };
+    let questions = [];
+    let current = 0;
+    let score = 0;
+    let mode = ""; // "practice" or "test"
 
-  // ===== 엘리먼트 =====
-  const el = {
-    hero: document.getElementById('hero'),
-    screen: document.getElementById('screen'),
-    result: document.getElementById('result'),
-
-    btnPractice: document.getElementById('btnPractice'),
-    btnExam: document.getElementById('btnExam'),
-    retryPractice: document.getElementById('retryPractice'),
-    retryExam: document.getElementById('retryExam'),
-
-    modeBadge: document.getElementById('modeBadge'),
-    prog: document.getElementById('prog'),
-    qNum: document.getElementById('qNum'),
-    qText: document.getElementById('qText'),
-    choices: document.getElementById('choices'),
-    fillWrap: document.getElementById('fillWrap'),
-    fillInput: document.getElementById('fillInput'),
-
-    hintBtn: document.getElementById('hintBtn'),
-    hintBox: document.getElementById('hintBox'),
-    hintText: document.getElementById('hintText'),
-
-    submitBtn: document.getElementById('submitBtn'),
-    nextBtn: document.getElementById('nextBtn'),
-    status: document.getElementById('status'),
-
-    audioC: document.getElementById('audio-correct'),
-    audioW: document.getElementById('audio-wrong'),
-
-    right: document.getElementById('rightCount'),
-    total: document.getElementById('totalCount'),
-    percent: document.getElementById('percent'),
-  };
-
-  // ===== 유틸 =====
-  const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
-  const sampleN=(arr,n)=>shuffle(arr.slice()).slice(0,n);
-  const stripSpaces=s=>s.replace(/\s+/g,'');
-  const norm=s=>s.normalize('NFC').trim().toLowerCase();
-
-  function playC(){ try{ el.audioC.currentTime=0; el.audioC.play(); }catch(e){} }
-  function playW(){ try{ el.audioW.currentTime=0; el.audioW.play(); }catch(e){} }
-
-  // ===== contains 판정(숫자 보강) =====
-  function checkContains(userText, q){
-    const raw = q.ignoreSpaces ? stripSpaces(userText) : userText;
-    const t = norm(raw);
-
-    const c = q.contains || {};
-    const hasAll = Array.isArray(c.all) && c.all.length>0;
-    const arrAll = hasAll ? c.all : [];
-    const arrAny = Array.isArray(c.any) ? c.any : [];
-
-    const keyNorm = k=>{
-      const s = String(k);
-      return norm(q.ignoreSpaces ? stripSpaces(s) : s);
-    };
-
-    const keys = hasAll ? arrAll : arrAny;
-    const numericOnly = keys.length>0 && keys.every(k=>/^\d+$/.test(keyNorm(k)));
-
-    if (numericOnly){
-      const numsIn = (t.match(/\d+/g)||[]).map(n=>Number(n));
-      if (!numsIn.length) return false;
-      const want = keys.map(k=>Number(keyNorm(k)));
-      return hasAll ? want.every(n=>numsIn.includes(n)) : want.some(n=>numsIn.includes(n));
+    async function loadQuestions(){
+      const res = await fetch("questions_tuned_70.json");
+      questions = await res.json();
     }
 
-    if (hasAll){ for(const k of arrAll){ if(!t.includes(keyNorm(k))) return false; } return true; }
-    if (arrAny.length){ for(const k of arrAny){ if(t.includes(keyNorm(k))) return true; } return false; }
+    function startQuiz(selectedMode){
+      mode = selectedMode;
+      current = 0; score = 0;
+      document.getElementById("quiz").style.display="block";
+      document.getElementById("final").style.display="none";
+      showQuestion();
+    }
 
-    // fallback: answers 완전일치
-    if (Array.isArray(q.answers)){
-      for(const a of q.answers){
-        if (t===keyNorm(a)) return true;
+    function showQuestion(){
+      const q = questions[current];
+      document.getElementById("progress").innerText = `${mode==="practice"?"연습":"실전"}모드\n문제 ${current+1} / ${questions.length}`;
+      document.getElementById("question").innerText = q.q;
+      document.getElementById("result").innerText = "";
+      document.getElementById("hint").style.display="none";
+
+      const choicesDiv = document.getElementById("choices");
+      const answerInput = document.getElementById("answerInput");
+      choicesDiv.innerHTML="";
+      answerInput.style.display="none";
+
+      if(q.type==="mc"){
+        q.choices.forEach((c,i)=>{
+          const lbl=document.createElement("label");
+          lbl.innerHTML=`<input type="radio" name="choice" value="${i}"> ${c}`;
+          choicesDiv.appendChild(lbl);
+        });
+      } else {
+        answerInput.value="";
+        answerInput.style.display="block";
       }
-      return false;
+
+      // 힌트 버튼
+      document.getElementById("hintBtn").onclick=()=>{
+        if(q.hint && q.hint!=="힌트 없음"){
+          document.getElementById("hint").innerText=q.hint;
+          document.getElementById("hint").style.display="block";
+        } else {
+          document.getElementById("hint").innerText="힌트가 없습니다.";
+          document.getElementById("hint").style.display="block";
+        }
+      };
+
+      // 제출 버튼
+      document.getElementById("submitBtn").onclick=()=>checkAnswer(q);
     }
-    return false;
-  }
 
-  // ===== 정답 판정 =====
-  function isCorrect(q){
-    if (q.type==='mc'){
-      const pick = document.querySelector('input[name="choice"]:checked');
-      if (!pick) return null;
-      return Number(pick.value)===q.answerIndex;
-    } else {
-      const v = el.fillInput.value || '';
-      if (!v.trim()) return null;
-
-      if (q.mode==='contains') return checkContains(v,q);
-
-      if (Array.isArray(q.answers)){
-        const t = norm(q.ignoreSpaces ? stripSpaces(v) : v);
-        return q.answers.some(a=> t === norm(q.ignoreSpaces ? stripSpaces(String(a)) : String(a)));
+    function checkAnswer(q){
+      let correct=false;
+      if(q.type==="mc"){
+        const checked=document.querySelector("input[name=choice]:checked");
+        if(!checked){ alert("답을 선택하세요!"); return; }
+        correct = parseInt(checked.value)===q.answerIndex;
+      } else {
+        const user=document.getElementById("answerInput").value.trim();
+        if(q.mode==="contains"){
+          correct=q.contains.all.every(k=>user.includes(k));
+        } else {
+          correct=q.answers.some(a=>a===user);
+        }
       }
-      return false;
-    }
-  }
 
-  // ===== 힌트 구성(있을 때만 표시) =====
-  function buildHint(q){
-    if (q.hint && q.hint.trim() && q.hint!=='힌트 없음') return q.hint;
-    return ''; // 없으면 빈 문자열
-  }
-
-  // ===== 렌더 =====
-  function render(){
-    const q = S.pool[S.idx];
-
-    el.modeBadge.textContent = (S.mode==='practice') ? '연습모드' : '실전모드';
-    el.prog.style.width = `${Math.round((S.idx)/S.total*100)}%`;
-    el.qNum.textContent = `문제 ${S.idx+1} / ${S.total}`;
-    el.qText.textContent = q.q;
-
-    // 초기화
-    el.choices.innerHTML = '';
-    el.fillWrap.classList.add('hidden');
-    el.fillInput.value = '';
-    el.status.textContent = '';
-    el.nextBtn.classList.add('hidden');
-    el.hintBox.style.display = 'none';
-    el.hintText.textContent = '';
-    el.hintBtn.style.display = 'none';
-
-    if (q.type==='mc'){
-      q.choices.forEach((c,i)=>{
-        const lab=document.createElement('label');
-        lab.className='choice';
-        lab.innerHTML = `<input type="radio" name="choice" value="${i}"> ${c}`;
-        el.choices.appendChild(lab);
-      });
-    } else {
-      el.fillWrap.classList.remove('hidden');
-    }
-
-    const hint = buildHint(q);
-    if (hint){
-      el.hintBtn.style.display = 'inline-flex';
-      el.hintBtn.onclick = ()=>{ el.hintText.textContent = hint; el.hintBox.style.display='block'; };
-    }
-
-    el.submitBtn.onclick = ()=>{
-      const res = isCorrect(q);
-      if (res===null){ el.status.innerHTML='<span class="bad">먼저 답을 선택/입력해 주세요.</span>'; return; }
-      if (res){
-        playC();
-        el.status.innerHTML = '<span class="ok">딩동댕! 정답입니다.</span>';
-        S.correct++;
-        if (S.mode==='exam') goNextAuto();
-      }else{
-        playW();
-        el.status.innerHTML = '<span class="bad">땡! 다시 시도해 보세요.</span>';
-        if (S.mode==='exam') goNextAuto();
+      if(correct){
+        score++;
+        document.getElementById("result").innerText="딩동댕! 정답입니다.";
+        document.getElementById("audio-correct").play();
+        if(mode==="practice"){ setTimeout(next,1000); }
+        else next();
+      } else {
+        document.getElementById("result").innerText="땡! 다시 시도해봐요";
+        document.getElementById("audio-wrong").play();
+        if(mode==="test"){ next(); }
       }
-      if (S.mode==='practice') el.nextBtn.classList.remove('hidden');
-    };
-
-    el.nextBtn.onclick = ()=>goNext();
-  }
-
-  function goNextAuto(){ setTimeout(goNext, 800); }
-  function goNext(){
-    S.idx++;
-    el.prog.style.width = `${Math.round((S.idx)/S.total*100)}%`;
-    if (S.idx>=S.total){ finish(); return; }
-    render();
-  }
-
-  function finish(){
-    el.screen.classList.add('hidden');
-    el.result.classList.remove('hidden');
-    el.right.textContent = S.correct;
-    el.total.textContent = S.total;
-    el.percent.textContent = Math.round(S.correct/S.total*100);
-  }
-
-  function start(mode){
-    S.mode = mode;
-    S.idx = 0;
-    S.correct = 0;
-
-    // 문제 뽑기(연습/실전 모두 섞어서 25문제)
-    S.pool = sampleN(S.all, Math.min(S.total, S.all.length));
-
-    // 화면 전환: 문제만 보이게
-    el.hero.classList.add('hidden');
-    el.result.classList.add('hidden');
-    el.screen.classList.remove('hidden');
-
-    render();
-  }
-
-  // 시작/재도전 버튼
-  el.btnPractice.onclick = ()=>start('practice');
-  el.btnExam.onclick = ()=>start('exam');
-  el.retryPractice.onclick = ()=>start('practice');
-  el.retryExam.onclick = ()=>start('exam');
-
-  // 데이터 로드
-  async function init(){
-    try{
-      const res = await fetch('questions_tuned_70.json?v='+Date.now());
-      const data = await res.json();
-      S.all = Array.isArray(data) ? data.flat() : [];
-    }catch(e){
-      alert('문제 데이터를 불러오지 못했습니다.');
-      console.error(e);
     }
-  }
-  init();
+
+    function next(){
+      current++;
+      if(current>=questions.length){
+        document.getElementById("quiz").style.display="none";
+        document.getElementById("final").style.display="block";
+        document.getElementById("final").innerText=`총 점수: ${score} / ${questions.length}`;
+      } else {
+        showQuestion();
+      }
+    }
+
+    document.getElementById("practiceBtn").onclick=()=>startQuiz("practice");
+    document.getElementById("testBtn").onclick=()=>startQuiz("test");
+
+    loadQuestions();
   </script>
 </body>
 </html>
