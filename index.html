@@ -90,9 +90,18 @@
     </div>
   </div>
 
-  <!-- 사운드 -->
-  <audio id="audio-correct" src="dingdong.mp3" preload="auto"></audio>
-  <audio id="audio-wrong"   src="ddang.mp3"    preload="auto"></audio>
+<!-- 사운드 -->
+<audio id="audio-correct" src="dingdong.mp3" preload="auto"></audio>
+<audio id="audio-wrong"   src="ddang.mp3"    preload="auto"></audio>
+
+<script>
+  const correctSound = document.getElementById("audio-correct");
+  const wrongSound   = document.getElementById("audio-wrong");
+
+  // 볼륨 조절 (0.0 ~ 1.0)
+  correctSound.volume = 0.5; // 딩동댕 줄이기
+  wrongSound.volume   = 0.9; // 땡 크게
+</script>
 
   <!-- 샘플 한 문제 (실제 사용은 외부 JSON) -->
   <script id="questionsData" type="application/json">[
@@ -320,3 +329,4 @@
   </script>
 </body>
 </html>
+
