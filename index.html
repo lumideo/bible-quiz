@@ -4,91 +4,90 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>초등2부 성경퀴즈</title>
-  <link rel="preload" href="questions_tuned_70.json" as="fetch" crossorigin="anonymous">
   <style>
     :root{
-      --bg:#f7f7fb;--card:#fff;--txt:#222;--muted:#666;--brand:#4f46e5;--ok:#16a34a;--bad:#dc2626;
-      --btn:#4f46e5;--btn-txt:#fff;--btn-sec:#eef2ff;--btn-sec-txt:#3730a3;
+      --bg:#f7f7fb;--card:#fff;--txt:#111;--muted:#6b7280;
+      --brand:#4f46e5;--ok:#16a34a;--bad:#dc2626;
     }
     *{box-sizing:border-box}
-    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR,sans-serif;background:var(--bg);color:var(--txt)}
-    .wrap{max-width:960px;margin:0 auto;padding:20px}
-    .hero{background:linear-gradient(180deg,#eef2ff,#fff);border-radius:16px;padding:24px 20px;margin-bottom:16px;border:1px solid #e5e7eb}
-    h1{margin:0 0 8px;font-size:28px}
-    .sub{margin:0;color:var(--muted)}
-    .row{display:flex;gap:12px;flex-wrap:wrap;margin-top:14px}
-    .btn{appearance:none;border:0;border-radius:12px;padding:12px 16px;cursor:pointer;font-weight:600}
-    .btn-primary{background:var(--btn);color:var(--btn-txt)}
-    .btn-secondary{background:var(--btn-sec);color:var(--btn-sec-txt)}
-    .btn[disabled]{opacity:.5;cursor:not-allowed}
+    body{margin:0;background:var(--bg);color:var(--txt);
+         font-family:system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR,sans-serif}
+    .wrap{max-width:920px;margin:0 auto;padding:18px}
+    .hero{background:linear-gradient(180deg,#eef2ff,#fff);border:1px solid #e5e7eb;border-radius:16px;padding:22px 18px;margin-top:10px}
+    h1{margin:0 0 6px;font-size:28px}
+    .sub{margin:0 0 10px;color:var(--muted)}
+    .row{display:flex;gap:10px;flex-wrap:wrap}
+    .btn{border:0;border-radius:12px;padding:12px 16px;cursor:pointer;font-weight:700}
+    .primary{background:var(--brand);color:#fff}
+    .secondary{background:#eef2ff;color:#3730a3}
     .card{background:var(--card);border:1px solid #e5e7eb;border-radius:16px;padding:18px}
-    .q-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
-    .badge{font-size:12px;color:#555;background:#eef2ff;border-radius:999px;padding:6px 10px}
-    .q-text{font-size:18px;line-height:1.5;margin:10px 0 12px}
-    .choices{display:grid;gap:10px;margin-top:6px}
-    .choice{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:12px;cursor:pointer}
-    .choice input{margin-right:8px}
-    .answer-box input{width:100%;font-size:16px;padding:12px;border-radius:10px;border:1px solid #d1d5db}
-    .hint-bar{display:flex;align-items:center;gap:8px;margin-top:10px}
-    .hint-box{display:none;background:#fffbeb;border:1px solid #fde68a;color:#92400e;border-radius:10px;padding:10px;margin-top:6px}
-    .footer-bar{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
-    .status{color:var(--muted);font-size:14px;margin-top:6px}
-    .score{font-weight:700}
     .hidden{display:none!important}
-    .ok{color:var(--ok)} .bad{color:var(--bad)}
-    .progress{height:10px;background:#e5e7eb;border-radius:999px;overflow:hidden}
+
+    .q-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+    .badge{font-size:12px;background:#eef2ff;color:#3730a3;border-radius:999px;padding:6px 10px}
+    .progress{height:10px;background:#e5e7eb;border-radius:999px;overflow:hidden;width:40%}
     .progress>div{height:100%;background:var(--brand);width:0%}
+
+    .q-num{color:var(--muted);margin-top:6px}
+    .q-text{font-size:18px;line-height:1.5;margin:10px 0 8px}
+    .choices{display:grid;gap:10px;margin:10px 0}
+    .choice{border:1px solid #e5e7eb;border-radius:12px;padding:10px;cursor:pointer;background:#fff}
+    .choice input{margin-right:8px}
+
+    .answer input{width:100%;padding:12px;border:1px solid #d1d5db;border-radius:10px;font-size:16px}
+
+    .hint-bar{display:flex;gap:8px;margin-top:8px}
+    .hint-box{display:none;background:#fffbeb;border:1px solid #fde68a;color:#92400e;border-radius:10px;padding:10px}
+
+    .footer{display:flex;gap:8px;margin-top:12px}
+    .status{margin-top:8px;font-weight:700}
+    .ok{color:var(--ok)} .bad{color:var(--bad)}
   </style>
 </head>
 <body>
   <div class="wrap">
-    <div class="hero">
+    <!-- 시작 화면 -->
+    <div id="hero" class="hero">
       <h1>초등2부 성경퀴즈</h1>
       <p class="sub">얘들아 문제를 풀어 볼까요?</p>
       <div class="row">
-        <button id="btnPractice" class="btn btn-primary">연습문제</button>
-        <button id="btnExam" class="btn btn-secondary">실전문제</button>
+        <button id="btnPractice" class="btn primary">연습문제</button>
+        <button id="btnExam" class="btn secondary">실전문제</button>
       </div>
     </div>
 
+    <!-- 문제 화면(시작을 누르면 이것만 보이게) -->
     <div id="screen" class="card hidden">
-      <div class="q-head">
-        <div><span id="modeBadge" class="badge">모드</span></div>
-        <div style="min-width:180px;width:40%;max-width:320px">
-          <div class="progress"><div id="prog"></div></div>
-        </div>
+      <div class="q-top">
+        <span id="modeBadge" class="badge">모드</span>
+        <div class="progress"><div id="prog"></div></div>
       </div>
-
-      <div id="qNum" class="status">문제 1 / 25</div>
+      <div id="qNum" class="q-num"></div>
       <div id="qText" class="q-text"></div>
 
       <div id="choices" class="choices"></div>
-
-      <div id="fillWrap" class="answer-box hidden">
-        <input id="fillInput" type="text" placeholder="정답을 입력하세요" autocomplete="off">
-      </div>
+      <div id="fillWrap" class="answer hidden"><input id="fillInput" type="text" placeholder="정답을 입력하세요" autocomplete="off"></div>
 
       <div class="hint-bar">
-        <button id="hintBtn" class="btn btn-secondary" style="display:none">힌트 보기</button>
-        <div id="hintBox" class="hint-box"><span id="hintText"></span></div>
+        <button id="hintBtn" class="btn secondary" style="display:none">힌트 보기</button>
       </div>
+      <div id="hintBox" class="hint-box"><span id="hintText"></span></div>
 
-      <div class="footer-bar">
-        <button id="submitBtn" class="btn btn-primary">제출하기</button>
-        <button id="nextBtn" class="btn btn-secondary hidden">다음 문제</button>
+      <div class="footer">
+        <button id="submitBtn" class="btn primary">제출하기</button>
+        <button id="nextBtn" class="btn secondary hidden">다음 문제</button>
       </div>
-
       <div id="status" class="status"></div>
     </div>
 
+    <!-- 결과 화면(필요 시) -->
     <div id="result" class="card hidden">
-      <h2>결과</h2>
-      <p class="q-text">수고했습니다♥</p>
-      <p class="status">맞춘 개수: <span id="rightCount" class="score"></span> / <span id="totalCount"></span></p>
-      <p class="status">점수: <span id="percent" class="score"></span> 점</p>
-      <div class="row">
-        <button id="retryPractice" class="btn btn-secondary">연습 다시하기</button>
-        <button id="retryExam" class="btn btn-primary">실전 다시하기</button>
+      <h2 style="margin:0 0 8px">수고했습니다♥</h2>
+      <div class="q-text">맞춘 개수: <b id="rightCount"></b> / <b id="totalCount"></b></div>
+      <div class="q-text">점수: <b id="percent"></b> 점</div>
+      <div class="row" style="margin-top:8px">
+        <button id="retryPractice" class="btn secondary">연습 다시하기</button>
+        <button id="retryExam" class="btn primary">실전 다시하기</button>
       </div>
     </div>
   </div>
@@ -98,273 +97,219 @@
   <audio id="audio-wrong"   src="ddang.mp3"    preload="auto"></audio>
 
   <script>
-  // ===== 전역 상태 =====
-  const S = {
-    all: [],
-    pool: [],
-    idx: 0,
-    mode: 'practice',
-    answered: false,
-    correctCount: 0,
-    total: 25,
-  };
+  // ===== 상태 =====
+  const S = { all:[], pool:[], idx:0, mode:'practice', correct:0, total:25 };
 
+  // ===== 엘리먼트 =====
   const el = {
-    btnPractice: document.getElementById('btnPractice'),
-    btnExam: document.getElementById('btnExam'),
+    hero: document.getElementById('hero'),
     screen: document.getElementById('screen'),
     result: document.getElementById('result'),
+
+    btnPractice: document.getElementById('btnPractice'),
+    btnExam: document.getElementById('btnExam'),
+    retryPractice: document.getElementById('retryPractice'),
+    retryExam: document.getElementById('retryExam'),
+
     modeBadge: document.getElementById('modeBadge'),
+    prog: document.getElementById('prog'),
     qNum: document.getElementById('qNum'),
     qText: document.getElementById('qText'),
     choices: document.getElementById('choices'),
     fillWrap: document.getElementById('fillWrap'),
     fillInput: document.getElementById('fillInput'),
+
     hintBtn: document.getElementById('hintBtn'),
     hintBox: document.getElementById('hintBox'),
     hintText: document.getElementById('hintText'),
+
     submitBtn: document.getElementById('submitBtn'),
     nextBtn: document.getElementById('nextBtn'),
     status: document.getElementById('status'),
-    prog: document.getElementById('prog'),
-    resultRight: document.getElementById('rightCount'),
-    resultTotal: document.getElementById('totalCount'),
-    resultPercent: document.getElementById('percent'),
-    retryPractice: document.getElementById('retryPractice'),
-    retryExam: document.getElementById('retryExam'),
-    audioCorrect: document.getElementById('audio-correct'),
-    audioWrong: document.getElementById('audio-wrong'),
+
+    audioC: document.getElementById('audio-correct'),
+    audioW: document.getElementById('audio-wrong'),
+
+    right: document.getElementById('rightCount'),
+    total: document.getElementById('totalCount'),
+    percent: document.getElementById('percent'),
   };
 
-  // ===== 사운드 =====
-  function playCorrect(){
-    try{ el.audioCorrect.volume = 0.95; el.audioCorrect.currentTime = 0; el.audioCorrect.play(); }catch(e){}
-  }
-  function playWrong(){
-    try{ el.audioWrong.volume = 0.95; el.audioWrong.currentTime = 0; el.audioWrong.play(); }catch(e){}
-  }
-
   // ===== 유틸 =====
-  function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
-  function sampleN(arr,n){return shuffle(arr.slice()).slice(0,n)}
-  function stripSpaces(s){return s.replace(/\s+/g,'')}
-  function norm(s){return s.normalize('NFC').trim().toLowerCase()}
+  const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+  const sampleN=(arr,n)=>shuffle(arr.slice()).slice(0,n);
+  const stripSpaces=s=>s.replace(/\s+/g,'');
+  const norm=s=>s.normalize('NFC').trim().toLowerCase();
 
-  // ===== contains 검사 (숫자 보강판) =====
+  function playC(){ try{ el.audioC.currentTime=0; el.audioC.play(); }catch(e){} }
+  function playW(){ try{ el.audioW.currentTime=0; el.audioW.play(); }catch(e){} }
+
+  // ===== contains 판정(숫자 보강) =====
   function checkContains(userText, q){
-    const raw = q.ignoreSpaces ? userText.replace(/\s+/g,'') : userText;
-    const t = raw.normalize('NFC').trim().toLowerCase();
+    const raw = q.ignoreSpaces ? stripSpaces(userText) : userText;
+    const t = norm(raw);
 
     const c = q.contains || {};
-    const hasAll = Array.isArray(c.all) && c.all.length > 0;
-    const keysAll = hasAll ? c.all : [];
-    const keysAny = Array.isArray(c.any) ? c.any : [];
+    const hasAll = Array.isArray(c.all) && c.all.length>0;
+    const arrAll = hasAll ? c.all : [];
+    const arrAny = Array.isArray(c.any) ? c.any : [];
 
-    const normKey = (k) => {
+    const keyNorm = k=>{
       const s = String(k);
-      const s2 = q.ignoreSpaces ? s.replace(/\s+/g,'') : s;
-      return s2.normalize('NFC').trim().toLowerCase();
+      return norm(q.ignoreSpaces ? stripSpaces(s) : s);
     };
 
-    const allKeys = hasAll ? keysAll : keysAny;
-    const keyNums = allKeys.map(k => normKey(k)).filter(v => /^\d+$/.test(v));
-    const isNumericOnly = allKeys.length > 0 && keyNums.length === allKeys.length;
+    const keys = hasAll ? arrAll : arrAny;
+    const numericOnly = keys.length>0 && keys.every(k=>/^\d+$/.test(keyNorm(k)));
 
-    if (isNumericOnly) {
-      const inputNums = (t.match(/\d+/g) || []).map(n => Number(n));
-      if (inputNums.length === 0) return false;
-
-      if (hasAll) {
-        const need = keyNums.map(Number);
-        return need.every(n => inputNums.includes(n));
-      } else {
-        const need = keyNums.map(Number);
-        return inputNums.some(n => need.includes(n));
-      }
+    if (numericOnly){
+      const numsIn = (t.match(/\d+/g)||[]).map(n=>Number(n));
+      if (!numsIn.length) return false;
+      const want = keys.map(k=>Number(keyNorm(k)));
+      return hasAll ? want.every(n=>numsIn.includes(n)) : want.some(n=>numsIn.includes(n));
     }
 
-    if (hasAll){
-      for (const k of keysAll){
-        const key = normKey(k);
-        if (!t.includes(key)) return false;
-      }
-      return true;
-    }
-    if (keysAny.length){
-      for (const k of keysAny){
-        const key = normKey(k);
-        if (t.includes(key)) return true;
-      }
-      return false;
-    }
+    if (hasAll){ for(const k of arrAll){ if(!t.includes(keyNorm(k))) return false; } return true; }
+    if (arrAny.length){ for(const k of arrAny){ if(t.includes(keyNorm(k))) return true; } return false; }
 
+    // fallback: answers 완전일치
     if (Array.isArray(q.answers)){
-      for (const ans of q.answers){
-        const key = normKey(ans);
-        if (t === key) return true;
+      for(const a of q.answers){
+        if (t===keyNorm(a)) return true;
       }
       return false;
     }
     return false;
   }
 
-  // ===== 자동 힌트 생성(B) =====
-  function buildHintText(q, isPractice){
-    if (q.hint && q.hint.trim() && q.hint !== "힌트 없음") return q.hint;
-
-    if (isPractice && q.type === "fill" && q.mode === "contains") {
-      const keys = (q.contains?.all && q.contains.all.length)
-        ? q.contains.all
-        : (q.contains?.any || []);
-      if (keys.length) return "힌트: " + keys.join(", ");
-    }
-    return "힌트 없음";
-  }
-
   // ===== 정답 판정 =====
   function isCorrect(q){
-    if (q.type === 'mc'){
-      const picked = document.querySelector('input[name="choice"]:checked');
-      if (!picked) return null;
-      return Number(picked.value) === q.answerIndex;
+    if (q.type==='mc'){
+      const pick = document.querySelector('input[name="choice"]:checked');
+      if (!pick) return null;
+      return Number(pick.value)===q.answerIndex;
     } else {
-      const val = el.fillInput.value || '';
-      if (!val.trim()) return null;
-      if (q.mode === 'contains') return checkContains(val, q);
+      const v = el.fillInput.value || '';
+      if (!v.trim()) return null;
+
+      if (q.mode==='contains') return checkContains(v,q);
+
       if (Array.isArray(q.answers)){
-        const t = norm(q.ignoreSpaces ? stripSpaces(val) : val);
-        return q.answers.some(a=>{
-          const key = norm(q.ignoreSpaces ? stripSpaces(String(a)) : String(a));
-          return t === key;
-        });
+        const t = norm(q.ignoreSpaces ? stripSpaces(v) : v);
+        return q.answers.some(a=> t === norm(q.ignoreSpaces ? stripSpaces(String(a)) : String(a)));
       }
       return false;
     }
   }
 
+  // ===== 힌트 구성(있을 때만 표시) =====
+  function buildHint(q){
+    if (q.hint && q.hint.trim() && q.hint!=='힌트 없음') return q.hint;
+    return ''; // 없으면 빈 문자열
+  }
+
   // ===== 렌더 =====
   function render(){
     const q = S.pool[S.idx];
-    const isPractice = S.mode === 'practice';
 
-    el.modeBadge.textContent = isPractice ? '연습모드' : '실전모드';
+    el.modeBadge.textContent = (S.mode==='practice') ? '연습모드' : '실전모드';
+    el.prog.style.width = `${Math.round((S.idx)/S.total*100)}%`;
     el.qNum.textContent = `문제 ${S.idx+1} / ${S.total}`;
     el.qText.textContent = q.q;
 
-    el.prog.style.width = `${Math.round((S.idx)/S.total*100)}%`;
-
+    // 초기화
     el.choices.innerHTML = '';
     el.fillWrap.classList.add('hidden');
-    el.hintBox.style.display = 'none';
-    el.hintText.textContent = '';
-    el.hintBtn.style.display = 'none';
     el.fillInput.value = '';
     el.status.textContent = '';
     el.nextBtn.classList.add('hidden');
-    el.submitBtn.disabled = false;
+    el.hintBox.style.display = 'none';
+    el.hintText.textContent = '';
+    el.hintBtn.style.display = 'none';
 
-    if (q.type === 'mc'){
+    if (q.type==='mc'){
       q.choices.forEach((c,i)=>{
-        const label = document.createElement('label');
-        label.className = 'choice';
-        label.innerHTML = `<input type="radio" name="choice" value="${i}"> ${c}`;
-        el.choices.appendChild(label);
+        const lab=document.createElement('label');
+        lab.className='choice';
+        lab.innerHTML = `<input type="radio" name="choice" value="${i}"> ${c}`;
+        el.choices.appendChild(lab);
       });
     } else {
       el.fillWrap.classList.remove('hidden');
     }
 
-    const built = buildHintText(q, isPractice);
-    const hasHint = built && built !== "힌트 없음";
-    if (hasHint || (isPractice && q.type==='fill' && q.mode==='contains')) {
+    const hint = buildHint(q);
+    if (hint){
       el.hintBtn.style.display = 'inline-flex';
-    } else {
-      el.hintBtn.style.display = 'none';
+      el.hintBtn.onclick = ()=>{ el.hintText.textContent = hint; el.hintBox.style.display='block'; };
     }
 
-    el.hintBtn.onclick = () => {
-      const txt = buildHintText(q, isPractice);
-      const show = txt && txt !== "힌트 없음";
-      el.hintText.textContent = show ? txt : '';
-      el.hintBox.style.display = show ? 'block' : 'none';
-    };
-
-    el.submitBtn.onclick = () => {
+    el.submitBtn.onclick = ()=>{
       const res = isCorrect(q);
-      if (res === null){
-        el.status.innerHTML = '<span class="bad">먼저 답을 선택하거나 입력해 주세요.</span>';
-        return;
-      }
+      if (res===null){ el.status.innerHTML='<span class="bad">먼저 답을 선택/입력해 주세요.</span>'; return; }
       if (res){
-        playCorrect();
+        playC();
         el.status.innerHTML = '<span class="ok">딩동댕! 정답입니다.</span>';
-        S.correctCount++;
-        goNextAuto();
-      } else {
-        playWrong();
-        el.status.innerHTML = '<span class="bad">땡! 다시 도전해 보자.</span>';
-        if (S.mode === 'exam') goNextAuto(); // 연습은 머물기
+        S.correct++;
+        if (S.mode==='exam') goNextAuto();
+      }else{
+        playW();
+        el.status.innerHTML = '<span class="bad">땡! 다시 시도해 보세요.</span>';
+        if (S.mode==='exam') goNextAuto();
       }
+      if (S.mode==='practice') el.nextBtn.classList.remove('hidden');
     };
 
-    el.nextBtn.onclick = () => goNext();
+    el.nextBtn.onclick = ()=>goNext();
   }
 
-  function goNextAuto(){
-    el.submitBtn.disabled = true;
-    setTimeout(goNext, 900);
-  }
-
+  function goNextAuto(){ setTimeout(goNext, 800); }
   function goNext(){
     S.idx++;
     el.prog.style.width = `${Math.round((S.idx)/S.total*100)}%`;
-    if (S.idx >= S.total){ finish(); return; }
+    if (S.idx>=S.total){ finish(); return; }
     render();
   }
 
   function finish(){
     el.screen.classList.add('hidden');
     el.result.classList.remove('hidden');
-    el.resultTotal.textContent = S.total;
-    el.resultRight.textContent = S.correctCount;
-    el.resultPercent.textContent = Math.round((S.correctCount/S.total)*100);
+    el.right.textContent = S.correct;
+    el.total.textContent = S.total;
+    el.percent.textContent = Math.round(S.correct/S.total*100);
   }
 
-  // ===== 시작/재도전 =====
   function start(mode){
     S.mode = mode;
     S.idx = 0;
-    S.correctCount = 0;
+    S.correct = 0;
 
-    if (mode === 'practice'){
-      // ✅ 연습: 주관식만 25문제
-      const fills = S.all.filter(q => q.type === 'fill');
-      S.pool = sampleN(fills, Math.min(S.total, fills.length));
-    } else {
-      // ✅ 실전: 전체에서 25문제
-      S.pool = sampleN(S.all, Math.min(S.total, S.all.length));
-    }
+    // 문제 뽑기(연습/실전 모두 섞어서 25문제)
+    S.pool = sampleN(S.all, Math.min(S.total, S.all.length));
 
-    el.screen.classList.remove('hidden');
+    // 화면 전환: 문제만 보이게
+    el.hero.classList.add('hidden');
     el.result.classList.add('hidden');
+    el.screen.classList.remove('hidden');
+
     render();
   }
 
-  el.btnPractice.addEventListener('click', ()=>start('practice'));
-  el.btnExam.addEventListener('click', ()=>start('exam'));
-  el.retryPractice.addEventListener('click', ()=>start('practice'));
-  el.retryExam.addEventListener('click', ()=>start('exam'));
+  // 시작/재도전 버튼
+  el.btnPractice.onclick = ()=>start('practice');
+  el.btnExam.onclick = ()=>start('exam');
+  el.retryPractice.onclick = ()=>start('practice');
+  el.retryExam.onclick = ()=>start('exam');
 
-  // ===== 데이터 로드 =====
+  // 데이터 로드
   async function init(){
     try{
-      const res = await fetch('questions_tuned_70.json?v=' + Date.now());
+      const res = await fetch('questions_tuned_70.json?v='+Date.now());
       const data = await res.json();
       S.all = Array.isArray(data) ? data.flat() : [];
     }catch(e){
       alert('문제 데이터를 불러오지 못했습니다.');
       console.error(e);
-      return;
     }
   }
   init();
