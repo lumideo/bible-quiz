@@ -1,182 +1,144 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-  <meta charset="UTF-8">
-  <title>초등2부 성경퀴즈</title>
-  <style>
-    body { font-family: sans-serif; background:#f7f7fa; }
-    .container { max-width: 800px; margin: 20px auto; }
-    .card { background:white; border-radius:10px; padding:20px; box-shadow:0 2px 6px rgba(0,0,0,0.1); margin-top:20px; }
-    button { padding:8px 14px; border:none; border-radius:6px; cursor:pointer; }
-    .btn { background:#4a67f5; color:white; margin:5px; }
-    .btn:hover { opacity:0.85; }
-    .wrong { color:red; font-weight:bold; }
-    .correct { color:green; font-weight:bold; }
-    .hint { margin-top:10px; font-size:14px; color:#555; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <h1>초등2부 성경퀴즈</h1>
-    <p>얘들아 문제를 풀어 볼까?</p>
-    <button onclick="startPractice()" class="btn">연습문제</button>
-    <button onclick="startTest()" class="btn">실전문제</button>
+// questions.js
+// 성경퀴즈 1~70 문항 (연습모드에서는 hint 표시, 주관식 중 애매한 서술형은 contains 판정)
 
-    <div id="quizArea" class="card" style="display:none;">
-      <div id="modeLabel"></div>
-      <div id="questionText"></div>
-      <div id="choices"></div>
-      <input type="text" id="answerInput" placeholder="정답을 입력하세요" style="width:100%;padding:8px;margin-top:10px;display:none;">
-      <div style="margin-top:10px;">
-        <button onclick="showHint()" class="btn" id="hintBtn">힌트 보기</button>
-        <button onclick="submitAnswer()" class="btn" id="submitBtn">제출하기</button>
-        <button onclick="nextQuestion()" class="btn" id="nextBtn" style="display:none;">다음 문제</button>
-      </div>
-      <div id="result" style="margin-top:10px;"></div>
-      <div id="hintArea" class="hint"></div>
-    </div>
-  </div>
+window.quizQuestions = [
+  { "id": 1, "q": "그가 고난 받으신 후에 또한 그들에게 확실한 많은 증거로 친히 살아계심을 나타내사 사십 일 동안 그들에게 보이시며 (      )의 일을 말씀하시니라.", "type": "fill", "answers": ["하나님 나라","하나님나라"], "hint": "사도행전 1장 3절", "ignoreSpaces": true },
 
-  <!-- 사운드 -->
-  <audio id="audio-correct" src="dingdong.mp3" preload="auto"></audio>
-  <audio id="audio-wrong"   src="ddang.mp3"    preload="auto"></audio>
+  { "id": 2, "q": "예수님이 가르쳐 주신 하나님 나라 이야기는 어느 책에 가득 담겨 있을까요?", "type": "fill", "answers": ["성경책","성경"], "hint": "힌트 없음" },
 
-  <script src="questions.js"></script>
-  <script>
-    let questions = window.quizQuestions || [];
-    let mode = "practice";
-    let current = 0;
-    let score = 0;
+  { "id": 3, "q": "다음 중 성경을 통해 알 수 있는 내용이 아닌 것은?", "type": "mc", "choices": ["하나님 나라의 시작","하나님 나라의 왕","하나님 나라의 역사","하나님 나라의 성공"], "answerIndex": 3 },
 
-    function startPractice(){
-      mode="practice"; current=0; score=0;
-      document.getElementById("quizArea").style.display="block";
-      showQuestion();
-    }
-    function startTest(){
-      mode="test"; current=0; score=0;
-      document.getElementById("quizArea").style.display="block";
-      showQuestion();
-    }
+  { "id": 4, "q": "태초에 하나님이 (      )를 창조하시니라.", "type": "fill", "answers": ["천지","하늘과 땅","하늘과땅","하늘 땅"], "hint": "창세기 1장 1절", "ignoreSpaces": true },
 
-    function showQuestion(){
-      const q = questions[current];
-      document.getElementById("modeLabel").innerText = (mode==="practice"?"연습모드":"실전모드") + " · 문제 " + (current+1) + " / " + questions.length;
-      document.getElementById("questionText").innerText = q.q;
-      document.getElementById("result").innerHTML="";
-      document.getElementById("hintArea").innerHTML="";
-      document.getElementById("nextBtn").style.display="none";
-      document.getElementById("hintBtn").style.display=(q.type==="fill")?"inline-block":"none";
+  { "id": 5, "q": "하나님은 세상을 며칠 동안 만드셨나요?", "type": "fill", "answers": ["6일","엿새","6"] },
 
-      if(q.type==="mc"){
-        document.getElementById("answerInput").style.display="none";
-        let html="";
-        q.choices.forEach((c,i)=>{
-          html += `<div><label><input type="radio" name="choice" value="${i}"> ${c}</label></div>`;
-        });
-        document.getElementById("choices").innerHTML=html;
-      } else {
-        document.getElementById("answerInput").style.display="block";
-        document.getElementById("answerInput").value="";
-        document.getElementById("choices").innerHTML="";
-      }
-    }
+  { "id": 6, "q": "다음 항목 중 창조 순서가 올바르지 않은 것은?", "type": "mc", "choices": ["첫째날 – 빛","셋째날 – 땅과 바다","넷째 날 – 해와 달과 별","여섯째날 – 새와 물고기"], "answerIndex": 3 },
 
-    function showHint(){
-      const q=questions[current];
-      if(q.hint) document.getElementById("hintArea").innerText="힌트 : "+q.hint;
-      else document.getElementById("hintArea").innerText="힌트 없음";
-    }
+  { "id": 7, "q": "하나님께서 사람을 하나님의 형상대로 창조하셨다는 말은 무슨 뜻일까요?", "type": "mc", "choices": ["우리의 모습이 하나님을 닮았다.","우리의 성격이 하나님을 닮았다.","하나님의 성품을 닮아 의로운 일을 할 수 있다.","문명을 이루고 발전시킬 수 있는 지능을 가졌다."], "answerIndex": 2 },
 
-    function norm(s){ return s.toString().trim().toLowerCase(); }
-    function stripSpaces(s){ return s.replace(/\s+/g,""); }
+  { "id": 8, "q": "하나님은 아담과 하와를 만드시고 어디에 살게 하셨나요?", "type": "fill", "answers": ["에덴동산","에덴"] },
 
-    // 숫자 붙여쓰기 방지
-    function includesWithBoundary(hay, needle){
-      if (!needle) return false;
-      if (/^[0-9]+$/.test(String(needle))){
-        const re=new RegExp(`(?<!\\d)${needle}(?!\\d)`);
-        return re.test(hay);
-      }
-      return hay.includes(needle);
-    }
+  { "id": 9, "q": "하나님께서 아담과 하와에게 모든 것을 허락하셨지만 딱 한 가지 하지 말라고 한 행동은 무엇인가요?", "type": "fill", "mode": "contains", "contains": { "all": ["선악과","먹"] }, "hint": "선악과를 먹지 말라", "ignoreSpaces": true },
 
-    function checkFill(userText, q){
-      const raw=q.ignoreSpaces?stripSpaces(userText):userText;
-      const t=norm(raw);
+  { "id": 10, "q": "뱀이 하와에게 찾아와서 뭐라고 거짓말을 했나요?", "type": "mc", "choices": ["선악을 알게 하는 나무의 열매를 먹으면 하나님처럼 될 거야.","선악을 알게 하는 나무의 열매를 먹으면 기분이 좋아질거야.","선악을 알게 하는 나무의 열매를 먹으면 죽게 될거야.","선악을 알게 하는 나무의 열매를 먹으면 똑똑해질거야."], "answerIndex": 0 },
 
-      if(q.mode==="contains"||q.contains){
-        const c=q.contains||{};
-        const prep=s=>norm(q.ignoreSpaces?stripSpaces(String(s)):String(s));
+  { "id": 11, "q": "왕이신 하나님이 세운 질서를 깨고 내가 왕이 되려고 하는 것을 성경은 뭐라고 하나요?", "type": "fill", "answers": ["죄"] },
 
-        if(Array.isArray(c.all)&&c.all.length){
-          for(const k of c.all){
-            if(!includesWithBoundary(t,prep(k))) return false;
-          }
-          return true;
-        }
-        if(Array.isArray(c.any)&&c.any.length){
-          return c.any.some(k=>includesWithBoundary(t,prep(k)));
-        }
-      }
+  { "id": 12, "q": "하나님은 아담과 하와가 죄를 지어 망가뜨린 하나님 나라의 질서를 다시 세우기 위해 어떤 약속을 주셨나요?", "type": "mc", "choices": ["세상을 새로 창조하겠다고 약속하셨어요.","여자의 후손인 예수님을 보내셔서 죄인을 구원해 주실 거라고 약속하셨어요.","죄인들을 다 심판하겠다고 약속하셨어요.","아담과 하와를 지켜주기 위해 천사를 보내주겠다고 약속하셨어요."], "answerIndex": 1 },
 
-      const list=Array.isArray(q.answers)?q.answers:(Array.isArray(q.answer)?q.answer:null);
-      if(list){
-        return list.some(ans=>{
-          const key=norm(q.ignoreSpaces?stripSpaces(String(ans)):String(ans));
-          return t===key;
-        });
-      }
-      return false;
-    }
+  { "id": 13, "q": "하나님은 죄가 가득한 세상을 심판하려고 결정하셨을 때 특별히 한 사람을 통해 하나님 나라를 계속 이어가게 하셨습니다. 그 사람은 누구일까요?", "type": "mc", "choices": ["모세","다윗","노아","에녹"], "answerIndex": 2 },
 
-    function submitAnswer(){
-      const q=questions[current];
-      let correct=false;
-      if(q.type==="mc"){
-        const sel=document.querySelector("input[name=choice]:checked");
-        if(sel && parseInt(sel.value)===q.answerIndex) correct=true;
-      } else {
-        const val=document.getElementById("answerInput").value;
-        if(checkFill(val,q)) correct=true;
-      }
+  { "id": 14, "q": "하나님은 범죄한 세상을 홍수로 심판하시려고 할 때 노아에게 무엇을 만들어 생명을 구원하라고 하셨나요?", "type": "fill", "answers": ["방주"] },
 
-      if(correct){
-        document.getElementById("result").innerHTML="<span class='correct'>딩동댕! 정답입니다</span>";
-        document.getElementById("audio-correct").play();
-        score++;
-        if(mode==="practice"){
-          // 연습: 정답이면 바로 다음 문제
-          current++;
-          if(current<questions.length) setTimeout(showQuestion,600);
-          else endQuiz();
-        } else {
-          // 실전: 바로 넘어감
-          current++;
-          if(current<questions.length) showQuestion(); else endQuiz();
-        }
-      } else {
-        document.getElementById("result").innerHTML="<span class='wrong'>땡! 다시 시도해 보자.</span>";
-        document.getElementById("audio-wrong").play();
-        if(mode==="practice"){
-          // 연습: 오답이면 다음문제 버튼
-          document.getElementById("nextBtn").style.display="inline-block";
-        } else {
-          // 실전: 바로 넘어감
-          current++;
-          if(current<questions.length) showQuestion(); else endQuiz();
-        }
-      }
-    }
+  { "id": 15, "q": "하나님이 물로 세상을 심판하실 때 며칠 동안 비가 내렸나요?", "type": "mc", "choices": ["30일","40일","50일","100일"], "answerIndex": 1 },
 
-    function nextQuestion(){
-      current++;
-      if(current<questions.length) showQuestion(); else endQuiz();
-    }
+  { "id": 16, "q": "하나님이 다시는 세상을 물로 심판하지 않겠다고 약속의 증거로 주신 것은 무엇일까요?", "type": "fill", "answers": ["무지개"] },
 
-    function endQuiz(){
-      document.getElementById("quizArea").innerHTML=`<h2>퀴즈 종료!</h2><p>점수: ${score} / ${questions.length}</p>`;
-    }
-  </script>
-</body>
-</html>
+  { "id": 17, "q": "그러므로 그 이름을 (      )이라 하니 이는 여호와께서 거기서 온 땅의 (      )를 혼잡게 하셨음이니라 여호와께서 거기서 그들을 온 지면에 흩으셨더라.", "type": "fill", "answers": ["바벨언어","바벨 언어","바벨과 언어"], "hint": "창세기 11장 9절", "ignoreSpaces": true },
+
+  { "id": 18, "q": "홍수 이후에 사람들은 동쪽으로 옮겨가다가 시날 평지에 이르러 무엇을 만들려고 했나요?", "type": "mc", "choices": ["놀이동산","다리","빌딩","탑"], "answerIndex": 3 },
+
+  { "id": 19, "q": "다음 중 사람들이 바벨탑을 쌓으면서 한 말이 아닌 것은?", "type": "mc", "choices": ["바벨탑이 유명한 장소가 되게 하자!","우리의 이름이 유명하게 될거야!","자, 탑 꼭대기를 하늘에 닿게 하자!","흩어지지 말고 여기에서 모여 살자!"], "answerIndex": 0 },
+
+  { "id": 20, "q": "다음 설명에 해당하는 사람은 누구인가요? * 갈대아 우르 출신 / 아버지의 이름은 데라 / 아내의 이름은 사래", "type": "fill", "answers": ["아브라함","아브람"] },
+
+  { "id": 21, "q": "다음 중 하나님께서 아브라함에게 한 약속이 아닌 것은?", "type": "mc", "choices": ["큰 민족을 이루게 하겠다.","복을 주겠다.","네 이름을 창대하게 하겠다.","오래 살게 해주겠다."], "answerIndex": 3 },
+
+  { "id": 22, "q": "아브라함의 아버지 데라는 아브라함과 함께 가나안으로 가다가 어디에서 죽었나요?", "type": "mc", "choices": ["세겜","가나안","하란","벧엘"], "answerIndex": 2 },
+
+  { "id": 23, "q": "아브라함이 하나님의 말씀을 따라 갈대아 우르를 떠날 때 몇 살이었나요?", "type": "fill", "answers": ["75","75세"], "hint": "정답: 75" },
+
+  { "id": 24, "q": "아브람이 여호와를 (      )여호와께서 이를 그의 (      )로 여기시고", "type": "fill", "answers": ["믿으니 의","믿으니의","믿음 의"], "hint": "창세기 15장 6절", "ignoreSpaces": true },
+
+  { "id": 25, "q": "하나님은 자녀가 없어 걱정하는 아브라함에게 어떻게 약속을 다시 확인시켜 주셨나요?", "type": "fill", "mode": "contains", "contains": { "all": ["별","많"] }, "hint": "하늘의 별처럼 많아짐" },
+
+  { "id": 26, "q": "아브라함이 100세에 낳은 약속의 아들의 이름은?", "type": "mc", "choices": ["이스마엘","이삭","롯","니므롯"], "answerIndex": 1 },
+
+  { "id": 27, "q": "하나님은 아브라함에게 어느 곳으로 가서 이삭을 번제물로 바치라고 했나요?", "type": "mc", "choices": ["가나안","이집트","모리아","하솔"], "answerIndex": 2 },
+
+  { "id": 28, "q": "하나님은 왜 아브라함에게 이삭을 제물로 바치라고 하셨나요?", "type": "fill", "mode": "contains", "contains": { "all": ["순종","경외"] }, "hint": "순종과 경외 확인" },
+
+  { "id": 29, "q": "하나님은 아브라함의 순종을 보시고 이삭 대신 무엇을 제물로 준비하셨나요?", "type": "mc", "choices": ["염소","황소","숫양","비둘기"], "answerIndex": 2 },
+
+  { "id": 30, "q": "이삭의 쌍둥이 두 아들의 이름은 적어보세요.", "type": "fill", "mode": "contains", "contains": { "all": ["야곱","에서"] }, "hint": "야곱과 에서" },
+
+  { "id": 31, "q": "야곱은 형 에서 대신 하나님의 복을 받으려다 형의 복수를 피해 어디로 도망 갔나요?", "type": "mc", "choices": ["교회","외삼촌 라반의 집","경찰서","삼촌 이스마엘 집"], "answerIndex": 1 },
+
+  { "id": 32, "q": "야곱은 고향으로 돌아오다가 어디에서 하나님을 만났나요?", "type": "mc", "choices": ["요단강","마하나임","얍복강","세겜"], "answerIndex": 2 },
+
+  { "id": 33, "q": "야곱은 얍복강에서 하나님과 씨름하며 하나님께 무엇을 간구했나요?", "type": "mc", "choices": ["에서 형의 복수로부터 지켜달라고","건강하게 해달라고","가족들이 무사하게 해달라고","하나님의 복을 달라고"], "answerIndex": 3 },
+
+  { "id": 34, "q": "하나님은 하나님과의 씨름에서 이긴 야곱의 이름을 어떻게 바꾸어 주셨나요?", "type": "fill", "answers": ["이스라엘"] },
+
+  { "id": 35, "q": "요셉이 꾼 꿈에 대한 설명으로 옳은 것은?", "type": "mc", "choices": ["형들의 곡식단이 요셉의 곡식단에게 절했다.","해와 달과 열한 별이 요셉에게 절했다.","둘 다 옳다.","둘 다 아니다."], "answerIndex": 2 },
+
+  { "id": 36, "q": "요셉을 시기한 형들은 자신을 찾아온 요셉을 누구에게 팔아버렸나요?", "type": "mc", "choices": ["블레셋 상인","애굽 상인","미디안 상인","갈대아 상인"], "answerIndex": 2 },
+
+  { "id": 37, "q": "애굽 왕 바로는 자신의 꿈을 해석해 준 요셉에게 어떤 직책을 맡겼나요?", "type": "mc", "choices": ["비서실장","국방부 장관","총리","시위대장"], "answerIndex": 2 },
+
+  { "id": 38, "q": "요셉은 애굽에 양식을 구하러 온 형들을 왜 용서해주었나요?", "type": "mc", "choices": ["형들이 불쌍해서","하나님의 계획을 깨달았기 때문에","다음에 복수하려고","아버지 야곱을 생각해서"], "answerIndex": 1 },
+
+  { "id": 39, "q": "하나님은 애굽에서 고통받는 이스라엘 백성을 구원하기 위해 누구를 보내셨나요?", "type": "fill", "answers": ["모세"] },
+
+  { "id": 40, "q": "애굽 왕 바로는 이스라엘 백성이 점점 많아지자 어떤 명령을 내렸나요?", "type": "mc", "choices": ["아이를 낳지 말라고 명령함.","딸을 낳으면 죽이라고 명령함.","아들을 낳으면 죽이라고 명령함.","결혼을 금지함."], "answerIndex": 2 },
+
+  { "id": 41, "q": "모세를 넣어 나일강에 떠내려 보낸 갈대상자를 누가 발견하였나요?", "type": "mc", "choices": ["바로의 공주","옆집 아줌마","애굽의 병사","악어"], "answerIndex": 0 },
+
+  { "id": 42, "q": "이스라엘 백성을 도와주려다가 애굽 사람을 죽인 모세는 결국 어디로 도망하나요?", "type": "mc", "choices": ["가나안","블레셋","에돔","미디안"], "answerIndex": 3 },
+
+  { "id": 43, "q": "하나님이 이스라엘 백성을 구원하기 위해 모세를 부르셨을 때 모세는 뭐라고 변명했나요?", "type": "mc", "choices": ["저는 겁이 많아서 안 되요.","저는 말을 잘 못해서 안 되요.","저는 애굽에 돌아가기 싫어요.","바로 왕이 저를 죽일거예요."], "answerIndex": 1 },
+
+  { "id": 44, "q": "하나님이 애굽에 내린 열가지 재앙 중 순서가 맞지 않는 것을 고르시오.", "type": "mc", "choices": ["두 번째 재앙 - 개구리","네 번째 재앙 - 파리","여덟 번째 재앙 - 우박","아홉 번째 재앙 - 흑암"], "answerIndex": 2 },
+
+  { "id": 45, "q": "애굽에 내린 마지막 열 번째 재앙은 무엇인가요?", "type": "fill", "mode": "contains", "contains": { "all": ["장자","죽"] }, "hint": "핵심: 장자 + 죽음" },
+
+  { "id": 46, "q": "열 번째 재앙과 관련이 있는 이스라엘의 절기는 무엇인가요?", "type": "mc", "choices": ["칠칠절","유월절","사순절","수장절"], "answerIndex": 1 },
+
+  { "id": 47, "q": "하나님이 애굽의 장자를 치실 때 이스라엘은 죽지 않도록 무엇을 하라고 명령하셨나요?", "type": "mc", "choices": ["문을 꼭 닫아라","경비를 서라","기도를 하라","어린 양의 피를 문설주에 뿌려라"], "answerIndex": 3 },
+
+  { "id": 48, "q": "모세가 백성에게 이르되 너희는 두려워하지 말고 가만히 서서 여호와께서 오늘 너희를 위하여 행하시는 (      )을 보라...", "type": "fill", "answers": ["구원"], "hint": "출애굽기 14장 13절" },
+
+  { "id": 49, "q": "모세가 지팡이를 내밀자 일어난 일이 아닌 것은?", "type": "mc", "choices": ["동풍이 불어와 홍해가 갈라졌어요","백성들이 바다에 난 마른 땅으로 걸어갔어요","애굽의 군대가 따라오기 시작했어요","애굽에서 나온 이스라엘 백성들이 홍해에서 빠져죽었어요"], "answerIndex": 3 },
+
+  { "id": 50, "q": "이스라엘 백성이 광야에서 먹을 것이 없어 불평하자 하나님은 무엇을 주셨나요?", "type": "mc", "choices": ["밥과 국","피자와 스파게티","만나와 메추라기","햄버거와 콜라"], "answerIndex": 2 },
+
+  { "id": 51, "q": "시내산에 도착한 모세와 이스라엘 백성에게 하나님은 무엇을 만들라고 하셨나요?", "type": "mc", "choices": ["성막","우물","집","탑"], "answerIndex": 0 },
+
+  { "id": 52, "q": "하나님은 성막을 이스라엘 진영 한 가운데 두라고 하신 이유가 아닌 것은?", "type": "mc", "choices": ["하루를 시작할 때 하나님을 생각하도록","하나님 중심으로 생활하도록","하나님이 함께 하시는 것을 깨닫도록","백성들을 감시하려고"], "answerIndex": 3 },
+
+  { "id": 53, "q": "하나님은 이스라엘 백성이 성막에서 하나님을 만날 수 있도록 무슨 제도를 만드셨나요?", "type": "fill", "answers": ["제사"] },
+
+  { "id": 54, "q": "다음 중 하나님께 제사드릴 때 바친 제물이 아닌 것은?", "type": "mc", "choices": ["소","흑염소","비둘기","곡식"], "answerIndex": 1 },
+
+  { "id": 55, "q": "이 날에 너희를 위하여 (      )하여 너희를 정결하게 하리니...", "type": "fill", "answers": ["속죄 정결","속죄정결"], "hint": "레위기 16장 30절", "ignoreSpaces": true },
+
+  { "id": 56, "q": "일년 중 이스라엘 백성의 모든 죄를 해결하는 절기는 언제인가요?", "type": "mc", "choices": ["오순절","유월절","속죄일","나팔절"], "answerIndex": 2 },
+
+  { "id": 57, "q": "구약시대에는 제물의 피로 죄 용서를 받았다면 지금은 무엇으로 우리의 죄를 용서받나요?", "type": "mc", "choices": ["기도","예배","예수님의 보혈","전도"], "answerIndex": 2 },
+
+  { "id": 58, "q": "광야기간 이스라엘 백성이 이동할 때 무엇이 먼저 가서 백성들의 쉴 곳을 찾았나요?", "type": "mc", "choices": ["정탐꾼","언약궤","구름 기둥","여호수아"], "answerIndex": 1 },
+
+  { "id": 59, "q": "하나님은 모세에게 가나안 땅을 살펴보도록 몇 명의 정탐꾼을 보내라고 하셨나요?", "type": "mc", "choices": ["10명","11명","12명","15명"], "answerIndex": 2 },
+
+  { "id": 60, "q": "여호와께서 우리를 기뻐하시면... 이는 과연 (      )과 (      )이 흐르는 땅이니라.", "type": "fill", "mode": "contains", "contains": { "all": ["젖","꿀"] }, "hint": "민수기 14장 8절" },
+
+  { "id": 61, "q": "다음 중 가나안 정탐꾼이 돌아와서 보고한 내용이 아닌 것은?", "type": "mc", "choices": ["가나안 땅의 주민은 강하다.","가나안의 성읍은 튼튼하다.","아낙 자손들은 거인처럼 크다.","가나안 땅은 쉽게 정복할 수 있다."], "answerIndex": 3 },
+
+  { "id": 62, "q": "열두 명의 정탐꾼 중에 믿음으로 가나안 땅을 취할 수 있다고 말한 두 명은 누구인가요?", "type": "fill", "mode": "contains", "contains": { "all": ["여호수아","갈렙"] }, "hint": "여호수아와 갈렙" },
+
+  { "id": 63, "q": "이스라엘 백성이 에돔 땅을 지날 때 힘들어서 불평하자 하나님은 무엇을 보내셨나요?", "type": "fill", "answers": ["불뱀","불 뱀"], "ignoreSpaces": true },
+
+  { "id": 64, "q": "뱀에 물린 백성이 고통 가운데 부르짖자 하나님은 어떤 방법으로 구원해주셨나요?", "type": "mc", "choices": ["치료약을 주셨다.","장대에 매달린 놋뱀을 보면 살려 주셨다.","그냥 내버려 두셨다.","모세에게 나와 회개한 사람을 살려 주셨다."], "answerIndex": 1 },
+
+  { "id": 65, "q": "이스라엘 백성이 모압 땅 근처에 오자 모압 왕 발락은 어떻게 반응했나요?", "type": "mc", "choices": ["무서워서 도망갔다.","이스라엘과 전쟁 준비를 했다.","모압의 신들에게 기도했다.","발람을 불러 이스라엘을 저주하게 했다."], "answerIndex": 3 },
+
+  { "id": 66, "q": "이스라엘이 서로 가나안 땅을 나눌 때 집안에 남자가 없어 땅을 받지 못해서 모세에게 찾아온 사람은 누구인가요?", "type": "mc", "choices": ["갈렙","슬로브핫의 딸들","에브라임 지파","레위 지파"], "answerIndex": 1 },
+
+  { "id": 67, "q": "모세는 가나안 땅에 들어가기 전 모압 평지에서 백성을 모으고 무엇을 가르쳤나요?", "type": "mc", "choices": ["가나안 지도","가나안 사람들의 언어","하나님 말씀","기도하는 법"], "answerIndex": 2 },
+
+  { "id": 68, "q": "이스라엘아 들으라 우리 하나님 여호와는 오직 유일한 여호와이시니 너는 (      )을 다하고 (      )을 다하고 (      )을 다하여 네 하나님 여호와를 (      )하라.", "type": "fill", "mode": "contains", "contains": { "all": ["마음","뜻","힘","사랑"] }, "hint": "신명기 6장 4-5절" },
+
+  { "id": 69, "q": "하나님께서 이스라엘에게 하나님 백성이 지켜야 할 법으로 주신 것은 무엇인가요?", "type": "fill", "answers": ["십계명"] },
+
+  { "id": 70, "q": "십계명의 가르침을 크게 두 개의 명령으로 요약하면 무엇인가요?", "type": "fill", "mode": "contains", "contains": { "all": ["하나님","사랑","이웃"] }, "hint": "하나님 사랑, 이웃 사랑" }
+];
