@@ -160,42 +160,68 @@
   function stripSpaces(s){return s.replace(/\s+/g,'')}
   function norm(s){return s.normalize('NFC').trim().toLowerCase()}
 
-  // contains 검사
-  function checkContains(userText, q){
-    const raw = q.ignoreSpaces ? stripSpaces(userText) : userText;
-    const t = norm(raw);
+  // contains 검사 (숫자문제 보강판)
+function checkContains(userText, q){
+  const raw = q.ignoreSpaces ? userText.replace(/\s+/g,'') : userText;
+  const t = raw.normalize('NFC').trim().toLowerCase();
 
-    const c = q.contains || {};
-    const hasAll = Array.isArray(c.all) && c.all.length>0;
-    const keysAll = hasAll ? c.all : [];
-    const keysAny = Array.isArray(c.any) ? c.any : [];
+  const c = q.contains || {};
+  const hasAll = Array.isArray(c.all) && c.all.length > 0;
+  const keysAll = hasAll ? c.all : [];
+  const keysAny = Array.isArray(c.any) ? c.any : [];
 
-    if (hasAll){
-      // 모두 포함
-      for (const k of keysAll){
-        const key = norm(q.ignoreSpaces ? stripSpaces(String(k)) : String(k));
-        if (!t.includes(key)) return false;
-      }
-      return true;
+  // 키워드 정규화
+  const normKey = (k) => {
+    const s = String(k);
+    const s2 = q.ignoreSpaces ? s.replace(/\s+/g,'') : s;
+    return s2.normalize('NFC').trim().toLowerCase();
+  };
+
+  // ✨ 숫자 전용 비교: 키워드가 모두 숫자면 숫자끼리 비교
+  const allKeys = hasAll ? keysAll : keysAny;
+  const keyNums = allKeys.map(k => normKey(k)).filter(v => /^\d+$/.test(v));
+  const isNumericOnly = allKeys.length > 0 && keyNums.length === allKeys.length;
+
+  if (isNumericOnly) {
+    // 입력에서 숫자들 추출
+    const inputNums = (t.match(/\d+/g) || []).map(n => Number(n));
+    if (inputNums.length === 0) return false;
+
+    if (hasAll) {
+      const need = keyNums.map(Number);
+      return need.every(n => inputNums.includes(n));
+    } else {
+      const need = keyNums.map(Number);
+      return inputNums.some(n => need.includes(n));
     }
-    if (keysAny.length){
-      // 아무거나 하나 포함
-      for (const k of keysAny){
-        const key = norm(q.ignoreSpaces ? stripSpaces(String(k)) : String(k));
-        if (t.includes(key)) return true;
-      }
-      return false;
+  }
+
+  // 🔤 일반(문자) 비교: 포함 여부
+  if (hasAll){
+    for (const k of keysAll){
+      const key = normKey(k);
+      if (!t.includes(key)) return false;
     }
-    // contains 정의가 없으면 정확매칭 대비: answers 있으면 answers 사용
-    if (Array.isArray(q.answers)){
-      for (const ans of q.answers){
-        const key = norm(q.ignoreSpaces ? stripSpaces(String(ans)) : String(ans));
-        if (t === key) return true;
-      }
-      return false;
+    return true;
+  }
+  if (keysAny.length){
+    for (const k of keysAny){
+      const key = normKey(k);
+      if (t.includes(key)) return true;
     }
     return false;
   }
+
+  // contains 없으면 answers 정확매칭으로 폴백
+  if (Array.isArray(q.answers)){
+    const t2 = t;
+    for (const ans of q.answers){
+      const key = normKey(ans);
+      if (t2 === key) return true;
+    }
+  }
+  return false;
+}
 
   // 정답 판정
   function isCorrect(q){
@@ -386,3 +412,4 @@
   </script>
 </body>
 </html>
+
